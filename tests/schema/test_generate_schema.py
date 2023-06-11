@@ -15,7 +15,7 @@ class TestGenerateSchema(test.SimpleTestCase):
         # from local machine(Ubuntu20) unittest, so add this function to compare them.
 
         # Switch double-quotes to backticks
-        expected = re.sub(r'"(w+)"', r"`\1`", expected)
+        expected = re.sub(r'"(\w+)"', r"`\1`", expected)
 
         diffs = [
             (
@@ -28,23 +28,31 @@ class TestGenerateSchema(test.SimpleTestCase):
             ),
             (
                 "`fk_sometable` INT REFERENCES `sometable` (`sometable_id`) ON DELETE CASCADE",
-                "`fk_sometable` INT,\n    CONSTRAINT `fk_sometabl_sometabl_6efae9bd` FOREIGN KEY (`fk_sometable`) REFERENCES `sometable` (`sometable_id`) ON DELETE CASCADE,\n    KEY `idx_sometable_some_ch_3d69eb` (`some_chars_table`)",
+                "`fk_sometable` INT,\n    CONSTRAINT `fk_sometabl_sometabl_6efae9bd` FOREIGN KEY (`fk_sometable`) REFERENCES `sometable` (`sometable_id`) ON DELETE CASCADE",
             ),
             (
-                "`manager_id` VARCHAR(50) REFERENCES `team` (`name`) ON DELETE CASCADE) /* The TEAMS! */;\nCREATE INDEX IF NOT EXISTS `idx_team_manager_676134` ON `team` (`manager_id`, `key`);\nCREATE INDEX IF NOT EXISTS `idx_team_manager_ef8f69` ON `team` (`manager_id`, `name`);",
-                "`manager_id` VARCHAR(50),\n    CONSTRAINT `fk_team_team_9c77cd8f` FOREIGN KEY (`manager_id`) REFERENCES `team` (`name`) ON DELETE CASCADE,\n    KEY `idx_team_manager_ef8f69` (`manager_id`, `name`)\n) CHARACTER SET utf8mb4 COMMENT='The TEAMS!';",
+                "\n);\nCREATE INDEX IF NOT EXISTS `idx_sometable_some_ch_3d69eb` ON `sometable` (`some_chars_table`);",
+                ",\n    KEY `idx_sometable_some_ch_3d69eb` (`some_chars_table`)\n);",
+            ),
+            (
+                "`manager_id` VARCHAR(50) REFERENCES `team` (`name`) ON DELETE CASCADE",
+                "`manager_id` VARCHAR(50),\n    CONSTRAINT `fk_team_team_9c77cd8f` FOREIGN KEY (`manager_id`) REFERENCES `team` (`name`) ON DELETE CASCADE",
+            ),
+            (
+                "\n) /* The TEAMS! */;\nCREATE INDEX IF NOT EXISTS `idx_team_manager_676134` ON `team` (`manager_id`, `key`);\nCREATE INDEX IF NOT EXISTS `idx_team_manager_ef8f69` ON `team` (`manager_id`, `name`);",
+                ",\n    KEY `idx_team_manager_676134` (`manager_id`, `key`),\n    KEY `idx_team_manager_ef8f69` (`manager_id`, `name`)\n) CHARACTER SET utf8mb4 COMMENT='The TEAMS!';",
             ),
             (
                 " REFERENCES `team` (`name`) ON DELETE CASCADE\n) /* The Team's address */",
-                ",\n    CONSTRAINT `fk_teamaddr_team_1c78d737` FOREIGN KEY (`team_id`) REFERENCES `team` (`name`) ON DELETE CASCADE\n) CHARACTER SET utf8mb4 COMMENT='The Team's address'",
+                ",\n    CONSTRAINT `fk_teamaddr_team_1c78d737` FOREIGN KEY (`team_id`) REFERENCES `team` (`name`) ON DELETE CASCADE\n) CHARACTER SET utf8mb4 COMMENT='The Team\\'s address'",
             ),
             (
-                "`created` TIMESTAMP NOT NULL  DEFAULT CURRENT_TIMESTAMP /* Created *\/'`\/* datetime */",
-                "`created` DATETIME(6) NOT NULL  COMMENT 'Created */'`/* datetime' DEFAULT CURRENT_TIMESTAMP(6),",
+                r"`created` TIMESTAMP NOT NULL  DEFAULT CURRENT_TIMESTAMP /* Created *\\/'`\\/* datetime */",
+                r"`created` DATETIME(6) NOT NULL  COMMENT 'Created */\'`/* datetime' DEFAULT CURRENT_TIMESTAMP(6)",
             ),
             (
-                ") /* What Tournaments *\/'`\/* we have */;\nCREATE INDEX IF NOT EXISTS `idx_tournament_name_6fe200` ON `tournament` (`name`);",
-                "    KEY `idx_tournament_name_6fe200` (`name`)\n) CHARACTER SET utf8mb4 COMMENT='What Tournaments */'`/* we have';",
+                "\n) /* What Tournaments *\\\\/'`\\\\/* we have */;\nCREATE INDEX IF NOT EXISTS `idx_tournament_name_6fe200` ON `tournament` (`name`);",
+                ",\n    KEY `idx_tournament_name_6fe200` (`name`)\n) CHARACTER SET utf8mb4 COMMENT='What Tournaments */\\'`/* we have';",
             ),
             (
                 "TIMESTAMP NOT NULL  DEFAULT CURRENT_TIMESTAMP,",
@@ -99,9 +107,10 @@ class TestGenerateSchema(test.SimpleTestCase):
                 "id` INT NOT NULL PRIMARY KEY AUTO_INCREMENT",
             ),
             ("`prize` VARCHAR(40),", "`prize` DECIMAL(10,2),"),
-            (" TEXT NOT NULL,", " LONGTEXT NOT NULL,"),
+            (" TEXT NOT NULL", " LONGTEXT NOT NULL"),
             ("\n);\n", "\n) CHARACTER SET utf8mb4;\n"),
             (" REAL ", " DOUBLE "),
+            ("\\\\", "\\"),
         ]
         for a, b in diffs:
             expected = expected.replace(a, b)
