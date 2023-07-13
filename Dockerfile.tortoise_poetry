@@ -1,0 +1,15 @@
+FROM python_pip:latest
+# docker build -t python_pip -f Dockerfile.python_pip .
+
+# Update py files
+COPY *.py ./
+
+RUN pip --version && \
+  # Install poetry
+  pip install poetry && \
+  poetry config virtualenvs.create false && \
+  # Change poetry mirrors if at local machine
+  ([ -f pip_conf.py ] && python pip_conf.py --poetry || poetry --version) && \
+  # install dependencies
+  make deps
+
