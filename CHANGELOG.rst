@@ -12,7 +12,7 @@ Changelog
 0.20.1
 ------
 Added
-^^^^^
+- Enhancement for FastAPI lifespan support (#1371)
 - Add binary compression support for `UUIDField` in `MySQL`. (#1458)
 - Only `Model`, `Tortoise`, `BaseDBAsyncClient`, `__version__`, and `connections` are now exported from `tortoise`
 

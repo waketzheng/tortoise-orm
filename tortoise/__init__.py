@@ -1,5 +1,6 @@
 import asyncio
 import importlib
+import importlib.metadata
 import json
 import os
 import warnings
@@ -690,12 +691,12 @@ def run_async(coro: Coroutine) -> None:
         loop.run_until_complete(connections.close_all(discard=True))
 
 
-__version__ = "0.20.0"
+__version__ = importlib.metadata.version("tortoise-orm")
 
-__all__ = [
+__all__ = (
+    "BaseDBAsyncClient",
     "Model",
     "Tortoise",
-    "BaseDBAsyncClient",
     "__version__",
     "connections",
-]
+)
