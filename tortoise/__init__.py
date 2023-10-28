@@ -1,4 +1,3 @@
-import asyncio
 import importlib
 import importlib.metadata
 import json
@@ -9,6 +8,7 @@ from inspect import isclass
 from types import ModuleType
 from typing import Coroutine, Dict, Iterable, List, Optional, Tuple, Type, Union, cast
 
+import anyio
 from pypika import Table
 
 from tortoise.backends.base.client import BaseDBAsyncClient
@@ -684,11 +684,15 @@ def run_async(coro: Coroutine) -> None:
 
         run_async(do_stuff())
     """
-    loop = asyncio.get_event_loop()
-    try:
-        loop.run_until_complete(coro)
-    finally:
-        loop.run_until_complete(connections.close_all(discard=True))
+
+    async def runner(c):
+        return await c
+
+    with anyio.from_thread.start_blocking_portal() as portal:
+        try:
+            portal.call(runner, coro)
+        finally:
+            portal.call(runner, connections.close_all(discard=True))
 
 
 __version__ = importlib.metadata.version("tortoise-orm")
