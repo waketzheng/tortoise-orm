@@ -1,4 +1,3 @@
-import asyncio
 import contextvars
 import importlib
 from contextvars import ContextVar
@@ -7,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 
 from tortoise.backends.base.config_generator import expand_db_url
 from tortoise.exceptions import ConfigurationError
+from tortoise.utils import gather
 
 if TYPE_CHECKING:
     from tortoise.backends.base.client import BaseDBAsyncClient
@@ -186,7 +186,7 @@ class ConnectionHandler:
             If ``False``, all connection objects are closed but `retained` in the storage.
         """
         tasks = [conn.close() for conn in self.all()]
-        await asyncio.gather(*tasks)
+        await gather(*tasks)
         if discard:
             for alias in self.db_config:
                 self.discard(alias)

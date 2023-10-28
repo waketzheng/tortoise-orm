@@ -1,4 +1,3 @@
-import asyncio
 import inspect
 import re
 from copy import copy, deepcopy
@@ -62,6 +61,7 @@ from tortoise.queryset import (
 from tortoise.router import router
 from tortoise.signals import Signals
 from tortoise.transactions import in_transaction
+from tortoise.utils import gather
 
 MODEL = TypeVar("MODEL", bound="Model")
 EMPTY = object()
@@ -859,7 +859,10 @@ class Model(metaclass=ModelMeta):
                     using_db,
                 )
             )
-        await asyncio.gather(*listeners)
+        async with anyio.create_task_group() as tg:
+            for listener in listeners:
+                tg.start_soon(listener)
+        await gather(*listeners)
 
     async def _post_delete(
         self,
@@ -875,7 +878,7 @@ class Model(metaclass=ModelMeta):
                     using_db,
                 )
             )
-        await asyncio.gather(*listeners)
+        await gather(*listeners)
 
     async def _pre_save(
         self,
@@ -886,7 +889,7 @@ class Model(metaclass=ModelMeta):
         cls_listeners = self._listeners.get(Signals.pre_save, {}).get(self.__class__, [])
         for listener in cls_listeners:
             listeners.append(listener(self.__class__, self, using_db, update_fields))
-        await asyncio.gather(*listeners)
+        await gather(*listeners)
 
     async def _post_save(
         self,
@@ -898,7 +901,7 @@ class Model(metaclass=ModelMeta):
         cls_listeners = self._listeners.get(Signals.post_save, {}).get(self.__class__, [])
         for listener in cls_listeners:
             listeners.append(listener(self.__class__, self, created, using_db, update_fields))
-        await asyncio.gather(*listeners)
+        await gather(*listeners)
 
     async def save(
         self,

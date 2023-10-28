@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, auto
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -25,16 +25,20 @@ if TYPE_CHECKING:  # pragma: nocoverage
 VALUE = TypeVar("VALUE")
 
 
-class StrEnum(str, Enum):
+class AutoNameStrEnum(str, Enum):
     __str__ = str.__str__
 
+    @staticmethod
+    def _generate_next_value_(name, start, count, last_values):
+        return name.replace("_", " ")
 
-class OnDelete(StrEnum):
-    CASCADE = "CASCADE"
-    RESTRICT = "RESTRICT"
-    SET_NULL = "SET NULL"
-    SET_DEFAULT = "SET DEFAULT"
-    NO_ACTION = "NO ACTION"
+
+class OnDelete(AutoNameStrEnum):
+    CASCADE = auto()
+    RESTRICT = auto()
+    SET_NULL = auto()
+    SET_DEFAULT = auto()
+    NO_ACTION = auto()
 
 
 CASCADE = OnDelete.CASCADE

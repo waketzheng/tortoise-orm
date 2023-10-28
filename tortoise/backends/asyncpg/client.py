@@ -1,6 +1,6 @@
-import asyncio
 from typing import Any, Callable, List, Optional, Tuple, TypeVar, Union
 
+import anyio
 import asyncpg
 from asyncpg.transaction import Transaction
 
@@ -71,8 +71,9 @@ class AsyncpgDBClient(BasePostgresClient):
     async def _close(self) -> None:
         if self._pool:  # pragma: nobranch
             try:
-                await asyncio.wait_for(self._pool.close(), 10)
-            except asyncio.TimeoutError:  # pragma: nocoverage
+                with anyio.fail_after(10):
+                    await self._pool.close()
+            except TimeoutError:  # pragma: nocoverage
                 self._pool.terminate()
             self._pool = None
             self.log.debug("Closed connection pool %s with params: %s", self._pool, self._template)

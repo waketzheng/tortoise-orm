@@ -1,10 +1,10 @@
-import asyncio
 from abc import ABC
 from functools import wraps
 from typing import Any, Callable, List, Optional, Tuple, TypeVar, Union
 
 import asyncodbc
 import pyodbc
+from anyio import Lock
 
 from tortoise import BaseDBAsyncClient
 from tortoise.backends.base.client import (
@@ -164,8 +164,8 @@ class ODBCTransactionWrapper(BaseTransactionWrapper):
         self.database = connection.database
         self.connection_name = connection.connection_name
         self._connection: asyncodbc.Connection = connection._connection
-        self._lock = asyncio.Lock()
-        self._trxlock = asyncio.Lock()
+        self._lock = Lock()
+        self._trxlock = Lock()
         self.log = connection.log
         self._finalized: Optional[bool] = None
         self.fetch_inserted = connection.fetch_inserted

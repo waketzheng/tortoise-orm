@@ -1,4 +1,3 @@
-import asyncio
 from functools import wraps
 from typing import Any, Callable, List, Optional, SupportsInt, Tuple, TypeVar, Union
 
@@ -11,6 +10,7 @@ except ImportError:
     from pymysql.charset import charset_by_name
     from pymysql import err as errors
 
+from anyio import Lock
 from pypika import MySQLQuery
 
 from tortoise import timezone
@@ -218,8 +218,8 @@ class TransactionWrapper(MySQLClient, BaseTransactionWrapper):
     def __init__(self, connection: MySQLClient) -> None:
         self.connection_name = connection.connection_name
         self._connection: mysql.Connection = connection._connection
-        self._lock = asyncio.Lock()
-        self._trxlock = asyncio.Lock()
+        self._lock = Lock()
+        self._trxlock = Lock()
         self.log = connection.log
         self._finalized: Optional[bool] = None
         self.fetch_inserted = connection.fetch_inserted

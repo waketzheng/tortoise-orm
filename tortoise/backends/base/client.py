@@ -1,6 +1,6 @@
-import asyncio
 from typing import Any, List, Optional, Sequence, Tuple, Type, Union
 
+from anyio import Lock
 from pypika import Query
 
 from tortoise.backends.base.executor import BaseExecutor
@@ -205,9 +205,9 @@ class BaseDBAsyncClient:
 class ConnectionWrapper:
     __slots__ = ("connection", "lock", "client")
 
-    def __init__(self, lock: asyncio.Lock, client: Any) -> None:
+    def __init__(self, lock: Lock, client: Any) -> None:
         """Wraps the connections with a lock to facilitate safe concurrent access."""
-        self.lock: asyncio.Lock = lock
+        self.lock: Lock = lock
         self.client = client
         self.connection: Any = client._connection
 

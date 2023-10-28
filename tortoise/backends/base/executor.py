@@ -1,4 +1,3 @@
-import asyncio
 import datetime
 import decimal
 from copy import copy
@@ -33,7 +32,7 @@ from tortoise.fields.relational import (
     RelationalField,
 )
 from tortoise.query_utils import QueryModifier
-from tortoise.utils import chunk
+from tortoise.utils import chunk, gather
 
 if TYPE_CHECKING:  # pragma: nocoverage
     from tortoise.backends.base.client import BaseDBAsyncClient
@@ -571,7 +570,7 @@ class BaseExecutor:
             for field, related_queries in self._prefetch_queries.items():
                 for related_query in related_queries:
                     prefetch_tasks.append(self._do_prefetch(instance_list, field, related_query))
-            await asyncio.gather(*prefetch_tasks)
+            await gather(*prefetch_tasks)
 
         return instance_list
 

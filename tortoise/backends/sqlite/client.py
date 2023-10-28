@@ -1,10 +1,10 @@
-import asyncio
 import os
 import sqlite3
 from functools import wraps
 from typing import Any, Callable, List, Optional, Sequence, Tuple, TypeVar
 
 import aiosqlite
+from anyio import Lock
 from pypika import SQLLiteQuery
 
 from tortoise.backends.base.client import (
@@ -60,7 +60,7 @@ class SqliteClient(BaseDBAsyncClient):
         self.pragmas.setdefault("foreign_keys", "ON")
 
         self._connection: Optional[aiosqlite.Connection] = None
-        self._lock = asyncio.Lock()
+        self._lock = Lock()
 
     async def create_connection(self, with_db: bool) -> None:
         if not self._connection:  # pragma: no branch
@@ -159,7 +159,7 @@ class TransactionWrapper(SqliteClient, BaseTransactionWrapper):
     def __init__(self, connection: SqliteClient) -> None:
         self.connection_name = connection.connection_name
         self._connection: aiosqlite.Connection = connection._connection  # type: ignore
-        self._lock = asyncio.Lock()
+        self._lock = Lock()
         self._trxlock = connection._lock
         self.log = connection.log
         self._finalized = False

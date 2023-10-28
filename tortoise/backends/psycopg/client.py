@@ -1,4 +1,3 @@
-import asyncio
 import typing
 from ssl import SSLContext
 
@@ -7,6 +6,7 @@ import psycopg.conninfo
 import psycopg.pq
 import psycopg.rows
 import psycopg_pool
+from anyio import Lock
 
 import tortoise.backends.base.client as base_client
 import tortoise.backends.base_postgres.client as postgres_client
@@ -190,8 +190,8 @@ class TransactionWrapper(PsycopgClient, base_client.BaseTransactionWrapper):
 
     def __init__(self, connection: PsycopgClient) -> None:
         self._connection: psycopg.AsyncConnection = connection._connection
-        self._lock = asyncio.Lock()
-        self._trxlock = asyncio.Lock()
+        self._lock = Lock()
+        self._trxlock = Lock()
         self.log = connection.log
         self.connection_name = connection.connection_name
         self._finalized = False

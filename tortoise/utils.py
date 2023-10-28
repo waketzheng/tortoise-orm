@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING, Any, Iterable, Optional
+from typing import TYPE_CHECKING, Any, Awaitable, Iterable, Optional
+
+import anyio
 
 from tortoise.log import logger
 
@@ -42,3 +44,12 @@ def chunk(instances: Iterable[Any], batch_size: Optional[int] = None) -> Iterabl
         instances = list(instances)
         for i in range(0, len(instances), batch_size):
             yield instances[i : i + batch_size]  # noqa:E203
+
+
+async def gather(*coros: Awaitable) -> None:
+    async def runner(c):
+        await c
+
+    async with anyio.create_task_group() as tg:
+        for c in coros:
+            tg.start_soon(runner, c)

@@ -1,11 +1,10 @@
-import asyncio
 import logging
 from types import ModuleType
 from typing import Dict, Iterable, Optional, Union
 
 from quart import Quart  # pylint: disable=E0401
 
-from tortoise import Tortoise, connections
+from tortoise import Tortoise, connections, run_async
 from tortoise.log import logger
 
 
@@ -106,5 +105,4 @@ def register_tortoise(
             await connections.close_all()
 
         logger.setLevel(logging.DEBUG)
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(inner())
+        run_async(inner())
