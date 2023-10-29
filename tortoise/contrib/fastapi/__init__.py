@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import asyncio
 from contextlib import AbstractAsyncContextManager
 from types import ModuleType
-from typing import Dict, Generator, Iterable, Optional, Union
+from typing import Dict, Iterable, Optional, Union
 
 from fastapi import FastAPI
 from starlette.requests import Request
@@ -30,7 +29,8 @@ class RegisterTortoise(AbstractAsyncContextManager):
     .. code-block:: python3
 
         def lifespan(app):
-            orm = await RegisterTortoise(app, ...)
+            orm = RegisterTortoise(app, ...)
+            await orm.register()
             yield
             await orm.close()
 
@@ -114,14 +114,6 @@ class RegisterTortoise(AbstractAsyncContextManager):
         self.add_exception_handlers = add_exception_handlers
 
     @staticmethod
-    async def init_orm(config, config_file, db_url, modules, generate_schemas) -> None:
-        await Tortoise.init(config=config, config_file=config_file, db_url=db_url, modules=modules)
-        logger.info("Tortoise-ORM started, %s, %s", connections._get_storage(), Tortoise.apps)
-        if generate_schemas:
-            logger.info("Tortoise-ORM generating schema")
-            await Tortoise.generate_schemas()
-
-    @staticmethod
     async def close() -> None:
         await connections.close_all()
         logger.info("Tortoise-ORM shutdown")
@@ -139,19 +131,25 @@ class RegisterTortoise(AbstractAsyncContextManager):
                 content={"detail": [{"loc": [], "msg": str(exc), "type": "IntegrityError"}]},
             )
 
+    @staticmethod
+    async def init_orm(config, config_file, db_url, modules, generate_schemas) -> None:
+        await Tortoise.init(config=config, config_file=config_file, db_url=db_url, modules=modules)
+        logger.info("Tortoise-ORM started, %s, %s", connections._get_storage(), Tortoise.apps)
+        if generate_schemas:
+            logger.info("Tortoise-ORM generating schema")
+            await Tortoise.generate_schemas()
+
     async def init(self) -> None:
         await self.init_orm(
             self.config, self.config_file, self.db_url, self.modules, self.generate_schemas
         )
 
-    def __await__(self) -> Generator[None, None, "RegisterTortoise"]:
-        yield from asyncio.create_task(self.init())
-        self.register_exception_handlers(self.app)
-        return self
-
-    async def __aenter__(self) -> "RegisterTortoise":
+    async def register(self) -> None:
         await self.init()
         self.register_exception_handlers(self.app)
+
+    async def __aenter__(self) -> "RegisterTortoise":
+        await self.register()
         return self
 
     async def __aexit__(self, *args, **kwargs) -> None:
@@ -174,11 +172,7 @@ def register_tortoise(
     orm = RegisterTortoise(app, config, config_file, db_url, modules, generate_schemas)
 
     class Manager(AbstractAsyncContextManager):
-        def __init__(self, app: FastAPI):
-            pass
-
-        def __await__(self) -> Generator[None, None, "Manager"]:
-            yield from asyncio.create_task(orm.init())
+        def __call__(self, *args, **kwargs) -> "Manager":
             return self
 
         async def __aenter__(self) -> None:
@@ -190,4 +184,4 @@ def register_tortoise(
     if add_exception_handlers:
         orm.register_exception_handlers(app)
 
-    app.router.lifespan_context = Manager
+    app.router.lifespan_context = Manager()

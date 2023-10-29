@@ -9,14 +9,16 @@ from tortoise.contrib.fastapi import RegisterTortoise
 
 @asynccontextmanager
 async def lifespan(app):
-    async with RegisterTortoise(
+    orm = RegisterTortoise(
         app,
         db_url="sqlite://:memory:",
         modules={"models": ["models"]},
         generate_schemas=True,
         add_exception_handlers=True,
-    ):
-        yield
+    )
+    await orm.register()
+    yield
+    await orm.close()
 
 
 app = FastAPI(title="Tortoise ORM FastAPI example", lifespan=lifespan)

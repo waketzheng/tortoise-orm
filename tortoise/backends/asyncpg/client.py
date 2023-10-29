@@ -1,7 +1,7 @@
 from typing import Any, Callable, List, Optional, Tuple, TypeVar, Union
 
-import anyio
 import asyncpg
+from anyio import Lock, fail_after
 from asyncpg.transaction import Transaction
 
 from tortoise.backends.asyncpg.executor import AsyncpgExecutor
@@ -71,7 +71,7 @@ class AsyncpgDBClient(BasePostgresClient):
     async def _close(self) -> None:
         if self._pool:  # pragma: nobranch
             try:
-                with anyio.fail_after(10):
+                with fail_after(10):
                     await self._pool.close()
             except TimeoutError:  # pragma: nocoverage
                 self._pool.terminate()
@@ -156,8 +156,8 @@ class AsyncpgDBClient(BasePostgresClient):
 class TransactionWrapper(AsyncpgDBClient, BaseTransactionWrapper):
     def __init__(self, connection: AsyncpgDBClient) -> None:
         self._connection: asyncpg.Connection = connection._connection
-        self._lock = asyncio.Lock()
-        self._trxlock = asyncio.Lock()
+        self._lock = Lock()
+        self._trxlock = Lock()
         self.log = connection.log
         self.connection_name = connection.connection_name
         self.transaction: Transaction = None

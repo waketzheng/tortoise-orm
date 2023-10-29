@@ -859,9 +859,6 @@ class Model(metaclass=ModelMeta):
                     using_db,
                 )
             )
-        async with anyio.create_task_group() as tg:
-            for listener in listeners:
-                tg.start_soon(listener)
         await gather(*listeners)
 
     async def _post_delete(
