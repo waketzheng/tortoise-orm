@@ -5,10 +5,8 @@ from models import User_Pydantic, UserIn_Pydantic, Users
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException
 
-try:
-    from typing import Annotated
-except ModuleNotFoundError:
-    from typing_extensions import Annotated
+# TODO: use typing.Annotated instead after py3.8 support dropped
+from typing_extensions import Annotated
 
 
 class Status(BaseModel):
@@ -39,7 +37,7 @@ async def get_user(user_id: UserId):
 @app.put("/user/{user_id}", response_model=User_Pydantic)
 async def update_user(user_id: UserId, user: UserInData):
     await Users.filter(id=user_id).update(**user.model_dump(exclude_unset=True))
-    return await User_Pydantic.from_queryset_single(Users.get(id=user_id))
+    return await get_user(user_id)
 
 
 @app.delete("/user/{user_id}", response_model=Status)
