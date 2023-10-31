@@ -4,6 +4,7 @@ from fastapi import APIRouter, Path
 from models import User_Pydantic, UserIn_Pydantic, Users
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException
+
 try:
     from typing import Annotated
 except ModuleNotFoundError:

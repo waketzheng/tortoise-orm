@@ -74,7 +74,7 @@ class PydanticModel(BaseModel):
             :class:`tortoise.contrib.pydantic.creator.PydanticMeta`, or you would be
             getting ``OperationalError`` exceptions.
 
-            This is due to how the ``asyncio`` framework forces I/O to happen in explicit ``await``
+            This is due to how the ``Asyncio`` framework forces I/O to happen in explicit ``await``
             statements. Hence we can only do lazy-fetching during an awaited method.
 
         :param obj: The Model instance you want serialized.
