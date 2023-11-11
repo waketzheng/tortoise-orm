@@ -685,14 +685,13 @@ def run_async(coro: Coroutine) -> None:
         run_async(do_stuff())
     """
 
-    async def runner(c):
-        return await c
-
-    with anyio.from_thread.start_blocking_portal() as portal:
+    async def run_and_teardown():
         try:
-            portal.call(runner, coro)
+            await coro
         finally:
-            portal.call(runner, connections.close_all(discard=True))
+            await connections.close_all(discard=True)
+
+    anyio.run(run_and_teardown)
 
 
 __version__ = importlib.metadata.version("tortoise-orm")
