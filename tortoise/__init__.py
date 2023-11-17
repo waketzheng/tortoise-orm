@@ -691,7 +691,8 @@ def run_async(coro: Coroutine) -> None:
         finally:
             await connections.close_all(discard=True)
 
-    anyio.run(run_and_teardown)
+    with anyio.from_thread.start_blocking_portal() as portal:
+        portal.call(run_and_teardown)
 
 
 __version__ = importlib.metadata.version("tortoise-orm")
