@@ -5,6 +5,7 @@ from types import ModuleType
 from typing import Dict, Iterable, Optional, Union
 
 from fastapi import FastAPI
+from pydantic import BaseModel  # pylint: disable=E0611
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
@@ -13,26 +14,22 @@ from tortoise.exceptions import DoesNotExist, IntegrityError
 from tortoise.log import logger
 
 
-class RegisterTortoise(AbstractAsyncContextManager):
-    """Register Tortoise-ORM set-up and tear-down in lifespan.
+class HTTPNotFoundError(BaseModel):
+    detail: str
 
-    Usage:
 
-    .. code-block:: python3
-
-        def lifespan(app):
-            async with RegisterTortoise(app, ...):
-                yield
-
-    Or:
-
-    .. code-block:: python3
-
-        def lifespan(app):
-            orm = RegisterTortoise(app, ...)
-            await orm.register()
-            yield
-            await orm.close()
+def register_tortoise(
+    app: FastAPI,
+    config: Optional[dict] = None,
+    config_file: Optional[str] = None,
+    db_url: Optional[str] = None,
+    modules: Optional[Dict[str, Iterable[Union[str, ModuleType]]]] = None,
+    generate_schemas: bool = False,
+    add_exception_handlers: bool = False,
+) -> None:
+    """
+    Registers lifespan context to set-up and tear-down Tortoise-ORM
+    inside a FastAPI application.
 
     You can configure using only one of ``config``, ``config_file``
     and ``(db_url, modules)``.
@@ -95,93 +92,38 @@ class RegisterTortoise(AbstractAsyncContextManager):
         For any configuration error
     """
 
-    def __init__(
-        self,
-        app: FastAPI,
-        config: Optional[dict] = None,
-        config_file: Optional[str] = None,
-        db_url: Optional[str] = None,
-        modules: Optional[Dict[str, Iterable[Union[str, ModuleType]]]] = None,
-        generate_schemas: bool = False,
-        add_exception_handlers: bool = False,
-    ) -> None:
-        self.app = app
-        self.config = config
-        self.config_file = config_file
-        self.db_url = db_url
-        self.modules = modules
-        self.generate_schemas = generate_schemas
-        self.add_exception_handlers = add_exception_handlers
-
-    @staticmethod
-    async def close() -> None:
-        await connections.close_all()
-        logger.info("Tortoise-ORM shutdown")
-
-    @staticmethod
-    def register_exception_handlers(app) -> None:
-        @app.exception_handler(DoesNotExist)  # type:ignore
-        async def doesnotexist_exception_handler(request: Request, exc: DoesNotExist):
-            return JSONResponse(status_code=404, content={"detail": str(exc)})
-
-        @app.exception_handler(IntegrityError)  # type:ignore
-        async def integrityerror_exception_handler(request: Request, exc: IntegrityError):
-            return JSONResponse(
-                status_code=422,
-                content={"detail": [{"loc": [], "msg": str(exc), "type": "IntegrityError"}]},
-            )
-
-    @staticmethod
-    async def init_orm(config, config_file, db_url, modules, generate_schemas) -> None:
+    async def init_orm() -> None:  # pylint: disable=W0612
         await Tortoise.init(config=config, config_file=config_file, db_url=db_url, modules=modules)
         logger.info("Tortoise-ORM started, %s, %s", connections._get_storage(), Tortoise.apps)
         if generate_schemas:
             logger.info("Tortoise-ORM generating schema")
             await Tortoise.generate_schemas()
 
-    async def init(self) -> None:
-        await self.init_orm(
-            self.config, self.config_file, self.db_url, self.modules, self.generate_schemas
-        )
+    async def close_orm() -> None:  # pylint: disable=W0612
+        await connections.close_all()
+        logger.info("Tortoise-ORM shutdown")
 
-    async def register(self) -> None:
-        await self.init()
-        self.register_exception_handlers(self.app)
+    if add_exception_handlers:
 
-    async def __aenter__(self) -> "RegisterTortoise":
-        await self.register()
-        return self
+        @app.exception_handler(DoesNotExist)
+        async def doesnotexist_exception_handler(request: Request, exc: DoesNotExist):
+            return JSONResponse(status_code=404, content={"detail": str(exc)})
 
-    async def __aexit__(self, *args, **kwargs) -> None:
-        await self.close()
-
-
-def register_tortoise(
-    app: FastAPI,
-    config: Optional[dict] = None,
-    config_file: Optional[str] = None,
-    db_url: Optional[str] = None,
-    modules: Optional[Dict[str, Iterable[Union[str, ModuleType]]]] = None,
-    generate_schemas: bool = False,
-    add_exception_handlers: bool = False,
-) -> None:
-    """
-    Leave it to compare with older version that is <= 0.20.0
-    For newer version, use `RegiterTortoise` instead.
-    """
-    orm = RegisterTortoise(app, config, config_file, db_url, modules, generate_schemas)
+        @app.exception_handler(IntegrityError)
+        async def integrityerror_exception_handler(request: Request, exc: IntegrityError):
+            return JSONResponse(
+                status_code=422,
+                content={"detail": [{"loc": [], "msg": str(exc), "type": "IntegrityError"}]},
+            )
 
     class Manager(AbstractAsyncContextManager):
         def __call__(self, *args, **kwargs) -> "Manager":
             return self
 
         async def __aenter__(self) -> None:
-            await orm.init()
+            await init_orm()
 
         async def __aexit__(self, *args, **kwargs) -> None:
-            await orm.close()
-
-    if add_exception_handlers:
-        orm.register_exception_handlers(app)
+            await close_orm()
 
     app.router.lifespan_context = Manager()

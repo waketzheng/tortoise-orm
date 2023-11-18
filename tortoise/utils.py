@@ -46,10 +46,14 @@ def chunk(instances: Iterable[Any], batch_size: Optional[int] = None) -> Iterabl
             yield instances[i : i + batch_size]  # noqa:E203
 
 
-async def gather(*coros: Awaitable) -> None:
-    async def runner(c):
-        await c
+async def gather(*coros: Awaitable) -> list:
+    results = [None] * len(coros)
+
+    async def runner(i, c):
+        results[i] = await c
 
     async with anyio.create_task_group() as tg:
-        for c in coros:
-            tg.start_soon(runner, c)
+        for i, c in enumerate(coros):
+            tg.start_soon(runner, i, c)
+
+    return results
