@@ -6,21 +6,19 @@ Changelog
 
 .. rst-class:: emphasize-children
 
-0.25
+0.24
 ====
 
-0.25.0 (unreleased)
+0.24.1 (unreleased)
 ------
 Fixed
 ^^^^^
+- IntField: constraints not taken into account (#1861)
 - Fixed asyncio "no current event loop" deprecation warning by replacing `asyncio.get_event_loop()` with modern event loop handling using `get_running_loop()` with fallback to `new_event_loop()` (#1865)
 
 Changed
 ^^^^^^^
 - add benchmarks for `get_for_dialect` (#1862)
-
-0.24
-====
 
 0.24.0
 ------

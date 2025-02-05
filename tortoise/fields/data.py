@@ -16,7 +16,7 @@ from tortoise import timezone
 from tortoise.exceptions import ConfigurationError, FieldError
 from tortoise.fields.base import Field
 from tortoise.timezone import get_default_timezone, get_timezone, get_use_tz, localtime
-from tortoise.validators import MaxLengthValidator
+from tortoise.validators import MaxLengthValidator, ValueRangeValidator
 
 try:
     from ciso8601 import parse_datetime
@@ -80,6 +80,8 @@ class IntField(Field[int], int):
         if primary_key or kwargs.get("pk"):
             kwargs["generated"] = bool(kwargs.get("generated", True))
         super().__init__(primary_key=primary_key, **kwargs)
+        min_value, max_value = self.constraints["ge"], self.constraints["le"]
+        self.validators.append(ValueRangeValidator(min_value, max_value))
 
     @property
     def constraints(self) -> dict:

@@ -1,12 +1,12 @@
 from tests import testmodels
 from tortoise.contrib import test
-from tortoise.exceptions import IntegrityError, OperationalError
+from tortoise.exceptions import OperationalError, ValidationError
 from tortoise.queryset import QuerySet
 
 
 class TestOneToOneFieldWithUnique(test.TestCase):
     async def test_principal__empty(self):
-        with self.assertRaises(IntegrityError):
+        with self.assertRaises(ValidationError):
             await testmodels.Principal.create()
 
     async def test_principal__create_by_id(self):
@@ -77,7 +77,7 @@ class TestOneToOneFieldWithUnique(test.TestCase):
         school = await testmodels.School.create(id=1024, name="School1")
         principal = await testmodels.Principal.create(name="Sang-Heon Jeon", school=school)
         del principal.school
-        with self.assertRaises(IntegrityError):
+        with self.assertRaises(ValidationError):
             await principal.save()
 
     async def test_principal__uninstantiated_create(self):

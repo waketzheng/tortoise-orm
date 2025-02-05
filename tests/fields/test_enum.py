@@ -2,7 +2,7 @@ from enum import IntEnum
 
 from tests import testmodels
 from tortoise.contrib import test
-from tortoise.exceptions import ConfigurationError, IntegrityError
+from tortoise.exceptions import ConfigurationError, ValidationError
 from tortoise.fields import CharEnumField, IntEnumField
 
 
@@ -26,7 +26,7 @@ class BadIntEnumIfGenerated(IntEnum):
 
 class TestIntEnumFields(test.TestCase):
     async def test_empty(self):
-        with self.assertRaises(IntegrityError):
+        with self.assertRaises(ValidationError):
             await testmodels.EnumFields.create()
 
     async def test_create(self):

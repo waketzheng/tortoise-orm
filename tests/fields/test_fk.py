@@ -1,11 +1,6 @@
 from tests import testmodels
 from tortoise.contrib import test
-from tortoise.exceptions import (
-    IntegrityError,
-    NoValuesFetched,
-    OperationalError,
-    ValidationError,
-)
+from tortoise.exceptions import NoValuesFetched, OperationalError, ValidationError
 from tortoise.queryset import QuerySet
 
 
@@ -16,7 +11,7 @@ class TestForeignKeyField(test.TestCase):
         )
 
     async def test_empty(self):
-        with self.assertRaises(IntegrityError):
+        with self.assertRaises(ValidationError):
             await testmodels.MinRelation.create()
 
     async def test_minimal__create_by_id(self):

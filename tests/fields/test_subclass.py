@@ -5,6 +5,7 @@ from tests.fields.subclass_models import (
     RacePlacingEnum,
 )
 from tortoise.contrib import test
+from tortoise.exceptions import ValidationError
 
 
 async def create_participants():
@@ -85,5 +86,5 @@ class TestEnumField(test.IsolatedTestCase):
         contact = await Contact.create()
 
         contact.type = "not_int"
-        with self.assertRaises((TypeError, ValueError)):
+        with self.assertRaises((TypeError, ValueError, ValidationError)):
             await contact.save()

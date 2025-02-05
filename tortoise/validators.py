@@ -101,6 +101,25 @@ class MaxValueValidator(NumericValidator):
             raise ValidationError(f"Value should be less or equal to {self.max_value}")
 
 
+class ValueRangeValidator(MinValueValidator):
+    """
+    Value range validator for IntField, SmallIntField, BigIntField
+    """
+
+    def __init__(self, min_value: int | float | Decimal, max_value: int | float | Decimal) -> None:
+        super().__init__(min_value)
+        self._validate_type(max_value)
+        self.max_value = max_value
+
+    def __call__(self, value: int | float | Decimal) -> None:
+        self._validate_type(value)
+        if not self.min_value <= value <= self.max_value:
+            raise ValidationError(
+                f"Value should be greater or equal to {self.min_value},"
+                f" and less or equal to {self.max_value}"
+            )
+
+
 class CommaSeparatedIntegerListValidator(Validator):
     """
     A validator to validate whether the given value is valid comma separated integer list or not.

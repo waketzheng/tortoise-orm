@@ -1,14 +1,39 @@
+from decimal import Decimal
+from typing import ClassVar
+
 from tests import testmodels
+from tortoise import Model
 from tortoise.contrib import test
-from tortoise.exceptions import IntegrityError
+from tortoise.exceptions import ValidationError
 from tortoise.expressions import F
 
 
-class TestIntFields(test.TestCase):
-    async def test_empty(self):
-        with self.assertRaises(IntegrityError):
-            await testmodels.IntFields.create()
+class TestIntNum(test.TestCase):
+    model: ClassVar[type[Model]] = testmodels.IntFields
 
+    async def test_empty(self):
+        with self.assertRaises(ValidationError):
+            await self.model.create()
+
+    async def test_value_range(self):
+        try:
+            # tests.testmodels.IntFields/BigIntFields
+            field = self.model._meta.fields_map["intnum"]
+        except KeyError:
+            # tests.testmodels.SmallIntFields
+            field = self.model._meta.fields_map["smallintnum"]
+        min_, max_ = field.constraints["ge"], field.constraints["le"]
+        with self.assertRaises(ValidationError):
+            await self.model.create(intnum=min_ - 1)
+        with self.assertRaises(ValidationError):
+            await self.model.create(intnum=max_ + 1)
+        with self.assertRaises(ValidationError):
+            await self.model.create(intnum=max_ + 1.1)
+        with self.assertRaises(ValidationError):
+            await self.model.create(intnum=Decimal(max_ + 1.1))
+
+
+class TestIntFields(test.TestCase):
     async def test_create(self):
         obj0 = await testmodels.IntFields.create(intnum=2147483647)
         obj = await testmodels.IntFields.get(id=obj0.id)
@@ -60,10 +85,8 @@ class TestIntFields(test.TestCase):
         self.assertEqual(obj1.intnum, 2)
 
 
-class TestSmallIntFields(test.TestCase):
-    async def test_empty(self):
-        with self.assertRaises(IntegrityError):
-            await testmodels.SmallIntFields.create()
+class TestSmallIntFields(TestIntNum):
+    model = testmodels.SmallIntFields
 
     async def test_create(self):
         obj0 = await testmodels.SmallIntFields.create(smallintnum=32767)
@@ -102,10 +125,8 @@ class TestSmallIntFields(test.TestCase):
         self.assertEqual(obj1.smallintnum, 2)
 
 
-class TestBigIntFields(test.TestCase):
-    async def test_empty(self):
-        with self.assertRaises(IntegrityError):
-            await testmodels.BigIntFields.create()
+class TestBigIntFields(TestIntNum):
+    model = testmodels.BigIntFields
 
     async def test_create(self):
         obj0 = await testmodels.BigIntFields.create(intnum=9223372036854775807)

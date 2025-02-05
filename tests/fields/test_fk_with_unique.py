@@ -1,12 +1,12 @@
 from tests import testmodels
 from tortoise.contrib import test
-from tortoise.exceptions import IntegrityError, NoValuesFetched, OperationalError
+from tortoise.exceptions import NoValuesFetched, OperationalError, ValidationError
 from tortoise.queryset import QuerySet
 
 
 class TestForeignKeyFieldWithUnique(test.TestCase):
     async def test_student__empty(self):
-        with self.assertRaises(IntegrityError):
+        with self.assertRaises(ValidationError):
             await testmodels.Student.create()
 
     async def test_student__create_by_id(self):
@@ -77,7 +77,7 @@ class TestForeignKeyFieldWithUnique(test.TestCase):
         school = await testmodels.School.create(id=1024, name="School1")
         student = await testmodels.Student.create(name="Sang-Heon Jeon", school=school)
         del student.school
-        with self.assertRaises(IntegrityError):
+        with self.assertRaises(ValidationError):
             await student.save()
 
     async def test_student__uninstantiated_create(self):
