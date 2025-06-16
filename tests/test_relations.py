@@ -6,6 +6,9 @@ from tests.testmodels import (
     Employee,
     Event,
     Extra,
+    M2mWithO2oPk,
+    Node,
+    O2oPkModelWithM2m,
     Pair,
     Reporter,
     Single,
@@ -14,6 +17,7 @@ from tests.testmodels import (
     UUIDFkRelatedNullModel,
 )
 from tortoise.contrib import test
+from tortoise.contrib.test.condition import NotIn
 from tortoise.exceptions import FieldError, NoValuesFetched
 from tortoise.functions import Count, Trim
 
@@ -322,13 +326,12 @@ class TestRelations(test.TestCase):
         root = await DoubleFK.create(name="root", left=left_1st_lvl)
 
         retrieved_root = (
-            await DoubleFK.all()
-            .select_related("left__left__left", "right")
-            .get(id=getattr(root, "id"))  # noqa
+            await DoubleFK.all().select_related("left__left__left", "right").get(id=root.pk)
         )
-        self.assertIsNone(retrieved_root.right)  # ignore
-        self.assertEqual(retrieved_root.left, left_1st_lvl)  # ignore
-        self.assertEqual(retrieved_root.left.left, left_2nd_lvl)  # type: ignore
+        self.assertIsNone(retrieved_root.right)
+        assert retrieved_root.left is not None
+        self.assertEqual(retrieved_root.left, left_1st_lvl)
+        self.assertEqual(retrieved_root.left.left, left_2nd_lvl)
 
     async def test_no_ambiguous_fk_relations_set(self):
         """Basic select_related test cases provided by @https://github.com/Terrance.
@@ -357,6 +360,29 @@ class TestRelations(test.TestCase):
         )
         self.assertIsNone(pair.right.extra)  # should be None
 
+    @test.requireCapability(dialect=NotIn("mssql", "mysql"))
+    async def test_0_value_fk(self):
+        """ForegnKeyField should exits even if the the source_field looks like false, but not None
+        src: https://github.com/tortoise/tortoise-orm/issues/1274
+        """
+        extra = await Extra.create(id=0)
+        single = await Single.create(extra=extra)
+
+        single_reload = await Single.get(id=single.id)
+        assert (await single_reload.extra).id == 0
+
+        tournament_0 = await Tournament.create(name="tournament zero", id=0)
+        await Event.create(name="event-zero", tournament=tournament_0)
+
+        e = await Event.get(name="event-zero")
+        id_before_fetch = e.tournament_id
+        await e.fetch_related("tournament")
+        id_after_fetch = e.tournament_id
+        self.assertEqual(id_before_fetch, id_after_fetch)
+
+        event_0 = await Event.get(name="event-zero").prefetch_related("tournament")
+        self.assertEqual(event_0.tournament, tournament_0)
+
 
 class TestDoubleFK(test.TestCase):
     select_match = r'SELECT [`"]doublefk[`"].[`"]name[`"] [`"]name[`"]'
@@ -371,7 +397,8 @@ class TestDoubleFK(test.TestCase):
         r'[`"]doublefk__right[`"].[`"]id[`"]=[`"]doublefk[`"].[`"]right_id[`"]'
     )
 
-    async def setUp(self) -> None:
+    async def asyncSetUp(self) -> None:
+        await super().asyncSetUp()
         one = await DoubleFK.create(name="one")
         two = await DoubleFK.create(name="two")
         self.middle = await DoubleFK.create(name="middle", left=one, right=two)
@@ -435,3 +462,20 @@ class TestDoubleFK(test.TestCase):
         self.assertRegex(query, self.join1_match)
         self.assertRegex(query, self.join2_match)
         self.assertEqual(result, [{"name": "middle", "left__name": "one", "right__name": "two"}])
+
+    async def test_many2many_field_with_o2o_fk(self):
+        tournament = await Tournament.create(name="t")
+        event = await Event.create(name="e", tournament=tournament)
+        address = await Address.create(city="c", street="s", event=event)
+        obj = await M2mWithO2oPk.create(name="m")
+        self.assertEqual(await obj.address.all(), [])
+        await obj.address.add(address)
+        self.assertEqual(await obj.address.all(), [address])
+
+    async def test_o2o_fk_model_with_m2m_field(self):
+        author = await Author.create(name="a")
+        obj = await O2oPkModelWithM2m.create(author=author)
+        node = await Node.create(name="n")
+        self.assertEqual(await obj.nodes.all(), [])
+        await obj.nodes.add(node)
+        self.assertEqual(await obj.nodes.all(), [node])

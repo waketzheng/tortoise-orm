@@ -24,12 +24,6 @@ If not you are welcome to open one.
 If you have an incomplete change, but won't/can't continue working on it, please create a PR in any case and mark it as ``(WIP)`` so we can help each other.
 
 
-Have a chat
-===========
-
-We have a chatroom on `Gitter <https://gitter.im/tortoise/community>`_
-
-
 Project structure
 =================
 
@@ -42,10 +36,10 @@ We have a ``Makefile`` that has the common operations listed, to get started jus
         up          Updates dev/test dependencies
         deps        Ensure dev/test dependencies are installed
         check       Checks that build is sane
-        lint        Reports all linter violations
         test        Runs all tests
         docs        Builds the documentation
         style       Auto-formats the code
+        lint        Auto-formats the code and check type hints
 
 So to run the tests you just need to run ``make test``, etc…
 
@@ -60,12 +54,12 @@ The code is structured in the following directories:
 ``tortoise/fields/``:
     The Fields are defined here.
 ``tortoise/backends/``:
-    DB Backends, such as ``sqlite``, ``asyncpg`` & ``mysql``
+    DB Backends, such as ``sqlite``, ``asyncpg``, ``psycopg`` & ``mysql``
 ``tortoise/backends/base/``:
     Common DB Backend code
 ``tortoise/contrib/``:
     Anything that helps people use the project, such as Testing framework and linter plugins
-``tortoise/tests/``:
+``tests/``:
     The Tortoise test code
 
 
@@ -99,7 +93,7 @@ Tortoise ORM follows a the following agreed upon style:
 * Always try to separate out terms clearly rather than concatenate words directly:
     * ``some_purpose`` instead of ``somepurpose``
     * ``SomePurpose`` instead of ``Somepurpose``
-* Keep in mind the targeted Python versions of ``>=3.7``:
+* Keep in mind the targeted Python versions of ``>=3.9``:
     * Do use f-strings
 * Please try and provide type annotations where you can, it will improve auto-completion in editors, and better static analysis.
 
@@ -115,10 +109,11 @@ Different types of tests
 -----------------------------
 - ``make test``: most basic quick test. only runs the tests on in an memory sqlite database without generating a coverage report.
 - ``make test_sqlite``: Runs the tests on a sqlite in memory database
-- ``make test_postgres``: Runs the tests on the postgres database
+- ``make test_postgres_asyncpg``: Runs the asyncpg tests on the postgres database
+- ``make test_postgres_psycopg``: Runs the psycopg tests on the postgres database
 - ``make test_mysql_myisam``: Runs the tests on the mysql database using the ``MYISAM`` storage engine (no transactions)
 - ``make test_mysql``: Runs the tests on the mysql database
-- ``make testall``: runs the tests on all 4 database types: sqlite (in memory), postgress, MySQL-MyISAM and MySQL-InnoDB
+- ``make testall``: runs the tests on all 4 database types: sqlite (in memory), postgresql, MySQL-MyISAM and MySQL-InnoDB
 - ``green``: runs the same tests as ``make test``, ensures the green plugin works
 - ``nose2 --plugin tortoise.contrib.test.nose2 --db-module tests.testmodels --db-url sqlite://:memory: ``: same test as ``make test`` , ensures the nose2 plugin works
 

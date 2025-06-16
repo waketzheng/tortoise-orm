@@ -1,5 +1,7 @@
 from tests.testmodels import CharFields
 from tortoise.contrib import test
+from tortoise.contrib.test.condition import NotEQ
+from tortoise.functions import Upper
 
 DODGY_STRINGS = [
     "a/",
@@ -8,6 +10,11 @@ DODGY_STRINGS = [
     "a\\x39",
     "a'",
     '"',
+    '""',
+    "'",
+    "''",
+    "\\_",
+    "\\\\_",
     "‘a",
     "a’",
     "‘a’",
@@ -95,10 +102,11 @@ DODGY_STRINGS = [
 
 
 class TestFuzz(test.TestCase):
+    @test.requireCapability(dialect=NotEQ("mssql"))
     async def test_char_fuzz(self):
         for char in DODGY_STRINGS:
             # print(repr(char))
-            if "\x00" in char and self.__db__.capabilities.dialect == "postgres":
+            if "\x00" in char and self._db.capabilities.dialect in ["postgres"]:
                 # PostgreSQL doesn't support null values as text. Ever. So skip these.
                 continue
 
@@ -132,3 +140,12 @@ class TestFuzz(test.TestCase):
             )
             self.assertEqual(obj1.pk, obj5.pk)
             self.assertEqual(char, obj5.char)
+
+            # Filter by a function
+            obj6 = (
+                await CharFields.annotate(upper_char=Upper("char"))
+                .filter(id=obj1.pk, upper_char=Upper("char"))
+                .first()
+            )
+            self.assertEqual(obj1.pk, obj6.pk)
+            self.assertEqual(char, obj6.char)

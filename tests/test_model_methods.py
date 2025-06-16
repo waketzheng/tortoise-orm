@@ -14,16 +14,18 @@ from tests.testmodels import (
     UUIDFkRelatedNullModel,
 )
 from tortoise.contrib import test
+from tortoise.contrib.test.condition import NotEQ
 from tortoise.exceptions import (
     ConfigurationError,
     DoesNotExist,
     IntegrityError,
     MultipleObjectsReturned,
+    ObjectDoesNotExistError,
     OperationalError,
     ParamsError,
     ValidationError,
 )
-from tortoise.expressions import F
+from tortoise.expressions import F, Q
 from tortoise.models import NoneAwaitable
 
 
@@ -38,6 +40,7 @@ class TestModelCreate(test.TestCase):
         mdl2 = await UUIDFkRelatedNullModel.get(id=mdl.id)
         self.assertEqual(mdl, mdl2)
 
+    @test.requireCapability(dialect=NotEQ("mssql"))
     async def test_save_generated_custom_id(self):
         cid = 12345
         mdl = await Tournament.create(id=cid, name="Test")
@@ -52,6 +55,7 @@ class TestModelCreate(test.TestCase):
         mdl2 = await UUIDFkRelatedNullModel.get(id=cid)
         self.assertEqual(mdl, mdl2)
 
+    @test.requireCapability(dialect=NotEQ("mssql"))
     async def test_save_generated_duplicate_custom_id(self):
         cid = 12345
         await Tournament.create(id=cid, name="TestOriginal")
@@ -84,10 +88,11 @@ class TestModelCreate(test.TestCase):
 
 
 class TestModelMethods(test.TestCase):
-    async def setUp(self):
-        self.mdl = await Tournament.create(name="Test")
-        self.mdl2 = Tournament(name="Test")
+    async def asyncSetUp(self):
+        await super().asyncSetUp()
         self.cls = Tournament
+        self.mdl = await self.cls.create(name="Test")
+        self.mdl2 = self.cls(name="Test")
 
     async def test_save(self):
         oldid = self.mdl.id
@@ -116,6 +121,14 @@ class TestModelMethods(test.TestCase):
         n_mdl = await self.cls.get(id=self.mdl.id)
         self.assertEqual(n_mdl.name, "Test")
         self.assertEqual(n_mdl.desc, "Something")
+
+    async def test_save_partial_with_pk_update(self):
+        # Not allow to update pk field only
+        with self.assertRaisesRegex(OperationalError, "Can't update pk field"):
+            await self.mdl.save(update_fields=["id"])
+        # So does update pk field with others
+        with self.assertRaisesRegex(OperationalError, f"use `{self.cls.__name__}.create` instead"):
+            await self.mdl.save(update_fields=["id", "desc"])
 
     async def test_create(self):
         mdl = self.cls(name="Test2")
@@ -171,8 +184,50 @@ class TestModelMethods(test.TestCase):
         mdl2 = await self.cls.get(name="Test2")
         self.assertEqual(mdl, mdl2)
 
+    async def test_update_or_create_with_defaults(self):
+        mdl = await self.cls.get(name=self.mdl.name)
+        mdl_dict = dict(mdl)
+        oldid = mdl.id
+        mdl.id = 135
+        with self.assertRaisesRegex(ParamsError, "Conflict value with key='id':"):
+            # Missing query: check conflict with kwargs and defaults before create
+            await self.cls.update_or_create(id=mdl.id, defaults=mdl_dict)
+        desc = str(uuid4())
+        # If there is no conflict with defaults and kwargs, it will be success to update or create
+        defaults = dict(mdl_dict, desc=desc)
+        kwargs = {"id": defaults["id"], "name": defaults["name"]}
+        mdl, created = await self.cls.update_or_create(defaults, **kwargs)
+        self.assertFalse(created)
+        self.assertEqual(defaults["desc"], mdl.desc)
+        self.assertNotEqual(self.mdl.desc, mdl.desc)
+        # Hint query: use defauts to update without checking conflict
+        mdl2, created = await self.cls.update_or_create(
+            id=oldid, desc=desc, defaults=dict(mdl_dict, desc="new desc")
+        )
+        self.assertFalse(created)
+        self.assertNotEqual(dict(mdl), dict(mdl2))
+        # Missing query: success to create if no conflict
+        not_exist_name = str(uuid4())
+        no_conflict_defaults = {"name": not_exist_name, "desc": desc}
+        no_conflict_kwargs = {"name": not_exist_name}
+        mdl, created = await self.cls.update_or_create(no_conflict_defaults, **no_conflict_kwargs)
+        self.assertTrue(created)
+        self.assertEqual(not_exist_name, mdl.name)
+
     async def test_first(self):
         mdl = await self.cls.first()
+        self.assertEqual(self.mdl.id, mdl.id)
+
+    async def test_last(self):
+        mdl = await self.cls.last()
+        self.assertEqual(self.mdl.id, mdl.id)
+
+    async def test_latest(self):
+        mdl = await self.cls.latest("name")
+        self.assertEqual(self.mdl.id, mdl.id)
+
+    async def test_earliest(self):
+        mdl = await self.cls.earliest("name")
         self.assertEqual(self.mdl.id, mdl.id)
 
     async def test_filter(self):
@@ -204,6 +259,9 @@ class TestModelMethods(test.TestCase):
         self.assertTrue(ret)
 
         ret = await self.cls.exists(name="XXX")
+        self.assertFalse(ret)
+
+        ret = await self.cls.exists(Q(name="XXX") & Q(name="Test"))
         self.assertFalse(ret)
 
     async def test_get_or_none(self):
@@ -245,12 +303,26 @@ class TestModelMethods(test.TestCase):
         self.assertEqual(obj, self.mdl)
 
     async def test_index_badval(self):
-        with self.assertRaises(KeyError):
-            await self.cls[100000]
+        with self.assertRaises(ObjectDoesNotExistError) as cm:
+            await self.cls[32767]
+        the_exception = cm.exception
+        # For compatibility reasons this should be an instance of KeyError
+        self.assertIsInstance(the_exception, KeyError)
+        self.assertIs(the_exception.model, self.cls)
+        self.assertEqual(the_exception.pk_name, "id")
+        self.assertEqual(the_exception.pk_val, 32767)
+        self.assertEqual(str(the_exception), f"{self.cls.__name__} has no object with id=32767")
 
     async def test_index_badtype(self):
-        with self.assertRaises(KeyError):
+        with self.assertRaises(ObjectDoesNotExistError) as cm:
             await self.cls["asdf"]
+        the_exception = cm.exception
+        # For compatibility reasons this should be an instance of KeyError
+        self.assertIsInstance(the_exception, KeyError)
+        self.assertIs(the_exception.model, self.cls)
+        self.assertEqual(the_exception.pk_name, "id")
+        self.assertEqual(the_exception.pk_val, "asdf")
+        self.assertEqual(str(the_exception), f"{self.cls.__name__} has no object with id=asdf")
 
     async def test_clone(self):
         mdl2 = self.mdl.clone()
@@ -266,6 +338,15 @@ class TestModelMethods(test.TestCase):
         await mdl2.save()
         self.assertNotEqual(mdl2.pk, self.mdl.pk)
         await mdl2.save()
+        mdls = list(await self.cls.all())
+        self.assertEqual(len(mdls), 2)
+
+    async def test_clone_from_db(self):
+        mdl2 = await self.cls.get(pk=self.mdl.pk)
+        mdl3 = mdl2.clone()
+        mdl3.pk = None
+        await mdl3.save()
+        self.assertNotEqual(mdl3.pk, mdl2.pk)
         mdls = list(await self.cls.all())
         self.assertEqual(len(mdls), 2)
 
@@ -298,7 +379,8 @@ class TestModelMethods(test.TestCase):
 
 
 class TestModelMethodsNoID(TestModelMethods):
-    async def setUp(self):
+    async def asyncSetUp(self):
+        await super().asyncSetUp()
         self.mdl = await NoID.create(name="Test")
         self.mdl2 = NoID(name="Test")
         self.cls = NoID

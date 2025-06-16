@@ -4,11 +4,12 @@ This module does a series of use tests on a non-source_field model,
 
 This is to test that behaviour doesn't change when one defined source_field parameters.
 """
+
 from tests.testmodels import NumberSourceField, SourceFields, StraightFields
 from tortoise.contrib import test
-from tortoise.expressions import F
+from tortoise.contrib.test.condition import NotEQ
+from tortoise.expressions import F, Q
 from tortoise.functions import Coalesce, Count, Length, Lower, Trim, Upper
-from tortoise.query_utils import Q
 
 
 class StraightFieldTests(test.TestCase):
@@ -219,6 +220,7 @@ class StraightFieldTests(test.TestCase):
         self.assertEqual(len(obj), 1)
         self.assertEqual(obj[0].chars, "aaa")
 
+    @test.requireCapability(dialect=NotEQ("mssql"))
     async def test_filter_by_aggregation_field_length(self):
         await self.model.create(chars="aaa")
         await self.model.create(chars="bbbbb")
@@ -254,6 +256,43 @@ class StraightFieldTests(test.TestCase):
 
         obj = await self.model.filter(chars="bbb").values("fk__chars")
         self.assertEqual(obj, [{"fk__chars": "aaa"}])
+
+    async def test_filter_with_field_f(self):
+        obj = await self.model.create(chars="a")
+        ret_obj = await self.model.filter(eyedee=F("eyedee")).first()
+        self.assertEqual(obj, ret_obj)
+
+        ret_obj = await self.model.filter(eyedee__lt=F("eyedee") + 1).first()
+        self.assertEqual(obj, ret_obj)
+
+    async def test_filter_with_field_f_annotation(self):
+        obj = await self.model.create(chars="a")
+        ret_obj = (
+            await self.model.annotate(eyedee_a=F("eyedee")).filter(eyedee=F("eyedee_a")).first()
+        )
+        self.assertEqual(obj, ret_obj)
+
+        ret_obj = (
+            await self.model.annotate(eyedee_a=F("eyedee") + 1)
+            .filter(eyedee__lt=F("eyedee_a"))
+            .first()
+        )
+        self.assertEqual(obj, ret_obj)
+
+    async def test_group_by(self):
+        await self.model.create(chars="aaa", blip="a")
+        await self.model.create(chars="aaa", blip="b")
+        await self.model.create(chars="bbb")
+
+        objs = (
+            await self.model.annotate(chars_count=Count("chars"))
+            .group_by("chars")
+            .order_by("chars")
+            .values("chars", "chars_count")
+        )
+        self.assertEqual(
+            objs, [{"chars": "aaa", "chars_count": 2}, {"chars": "bbb", "chars_count": 1}]
+        )
 
 
 class SourceFieldTests(StraightFieldTests):

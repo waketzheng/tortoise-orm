@@ -1,4 +1,6 @@
-from typing import Any, List
+from __future__ import annotations
+
+from typing import Any
 
 from tortoise.backends.base.schema_generator import BaseSchemaGenerator
 from tortoise.converters import encoders
@@ -8,7 +10,7 @@ class SqliteSchemaGenerator(BaseSchemaGenerator):
     DIALECT = "sqlite"
 
     @classmethod
-    def _get_escape_translation_table(cls) -> List[str]:
+    def _get_escape_translation_table(cls) -> list[str]:
         table = super()._get_escape_translation_table()
         table[ord('"')] = '"'
         table[ord("'")] = "'"
@@ -30,10 +32,7 @@ class SqliteSchemaGenerator(BaseSchemaGenerator):
         auto_now: bool = False,
     ) -> str:
         default_str = " DEFAULT"
-        if auto_now_add:
-            default_str += " CURRENT_TIMESTAMP"
-        else:
-            default_str += f" {default}"
+        default_str += " CURRENT_TIMESTAMP" if auto_now_add else f" {default}"
         return default_str
 
     def _escape_default_value(self, default: Any):
