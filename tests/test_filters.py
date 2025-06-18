@@ -8,6 +8,7 @@ from tests.testmodels import (
     CharPkModel,
     DecimalFields,
 )
+from tortoise import connections
 from tortoise.backends.mysql.executor import escape_backslash_except_wildcards
 from tortoise.contrib import test
 from tortoise.exceptions import FieldError
@@ -217,6 +218,10 @@ class TestCharFieldLikeFilters(test.TestCase):
         await self.model_cls.bulk_create(
             [self.model_cls(char=i) for i in (*values1, *values2, *values3)]
         )
+        self.db = connections.get("models")
+        dialect = self.db.schema_generator.DIALECT
+        if dialect == "sqlite":
+            await self.db.execute_script("PRAGMA case_sensitive_like=ON;")
 
     async def test_like_percent(self):
         self.assertSetEqual(
@@ -248,7 +253,7 @@ class TestCharFieldLikeFilters(test.TestCase):
             {"like", "lIke", "l*ke", "l_ke", "l%ke", "l\\ke", "l_\\ke", "l%_ke", "like1"},
         )
 
-    async def test_like_underline(self):
+    async def test_like_underscore(self):
         self.assertSetEqual(
             set(await CharFields.filter(char__like="like_").values_list("char", flat=True)),
             {"like1"},
