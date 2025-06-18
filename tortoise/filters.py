@@ -49,7 +49,7 @@ def escape_like(val: str) -> str:
     return val.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
-def escape_like_except_wildcards(val: str) -> str:
+def escape_backslash_except_wildcards(val: str) -> str:
     # Replace \ with \\ if the backslash is not followed by % or _
     return re.sub(r"\\(?![%_])", r"\\\\", val)
 
@@ -149,14 +149,14 @@ def contains(field: Term, value: str) -> Criterion:
 
 def like(field: Term, value: str) -> Criterion:
     return Like(
-        Cast(field, SqlTypes.VARCHAR), field.wrap_constant(escape_like_except_wildcards(value))
+        Cast(field, SqlTypes.VARCHAR), field.wrap_constant(escape_backslash_except_wildcards(value))
     )
 
 
 def ilike(field: Term, value: str) -> Criterion:
     return Like(
         Upper(Cast(field, SqlTypes.VARCHAR)),
-        field.wrap_constant(Upper(escape_like_except_wildcards(value))),
+        field.wrap_constant(Upper(escape_backslash_except_wildcards(value))),
     )
 
 

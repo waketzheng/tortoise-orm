@@ -56,9 +56,9 @@ def escape_like(val: str) -> str:
     return val.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
-def escape_like_except_wildcards(val: str) -> str:
+def escape_backslash_except_wildcards(val: str) -> str:
     # Replace \ with \\\\ if the backslash is not followed by % or _
-    return re.sub(r"\\(?![%_])", r"\\\\\\\\", val)
+    return re.sub(r"\\(?![%_])", "\\\\\\\\", val)
 
 
 def mysql_contains(field: Term, value: str) -> Criterion:
@@ -68,17 +68,22 @@ def mysql_contains(field: Term, value: str) -> Criterion:
 
 
 def mysql_like(field: Term, value: str) -> Criterion:
+    # For MySQL, when table was created with COLLATE of
+    # utf8_general_ci/utf8mb4_general_ci/utf8_unicode_ci,
+    # it is case insensitive;
+    # while COLLATE of utf8_bin/utf8mb4_bin is case sensitive.
+    # So we cast field as 'BINARY' to force case sensitive select.
     return Like(
-        functions.Cast(field, SqlTypes.CHAR),
-        StrWrapper(escape_like_except_wildcards(value)),
+        functions.Cast(field, SqlTypes.BINARY),
+        StrWrapper(escape_backslash_except_wildcards(value)),
         escape="",
     )
 
 
-def mysql_ilike(field: Term, value: str) -> Criterion:
+def mysql_insensitive_like(field: Term, value: str) -> Criterion:
     return Like(
         functions.Upper(functions.Cast(field, SqlTypes.CHAR)),
-        functions.Upper(StrWrapper(escape_like_except_wildcards(value))),
+        functions.Upper(StrWrapper(escape_backslash_except_wildcards(value))),
         escape="",
     )
 
@@ -137,7 +142,7 @@ class MySQLExecutor(BaseExecutor):
     FILTER_FUNC_OVERRIDE = {
         contains: mysql_contains,
         like: mysql_like,
-        ilike: mysql_ilike,
+        ilike: mysql_insensitive_like,
         starts_with: mysql_starts_with,
         ends_with: mysql_ends_with,
         insensitive_exact: mysql_insensitive_exact,
