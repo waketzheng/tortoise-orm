@@ -23,22 +23,19 @@ def escape_backslash_except_wildcards(val: str) -> str:
 def like(field: Term, value: str) -> Criterion:
     return Like(
         Cast(field, SqlTypes.VARCHAR),
-        field.wrap_constant(escape_backslash_except_wildcards(value)),
+        field.wrap_constant(value),
     )
 
 
 def ilike(field: Term, value: str) -> Criterion:
     return Like(
         Upper(Cast(field, SqlTypes.VARCHAR)),
-        field.wrap_constant(Upper(escape_backslash_except_wildcards(value))),
+        field.wrap_constant(Upper(value)),
     )
 
 
 class MSSQLExecutor(ODBCExecutor):
-    FILTER_FUNC_OVERRIDE = {
-        like: like,
-        ilike: ilike,
-    }
+    FILTER_FUNC_OVERRIDE = {like: like, ilike: ilike}
 
     async def execute_explain(self, sql: str) -> Any:
         raise UnSupportedError("MSSQL does not support explain")
