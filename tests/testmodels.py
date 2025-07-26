@@ -33,8 +33,12 @@ from tortoise.validators import (
 )
 
 
-def generate_token():
+def generate_token() -> str:
     return binascii.hexlify(os.urandom(16)).decode("ascii")
+
+
+def generate_unique_string() -> str:
+    return uuid.uuid4().hex[:10]
 
 
 class TestSchemaForJSONField(BaseModel):
@@ -47,7 +51,7 @@ json_pydantic_default = TestSchemaForJSONField(foo=1, bar="baz")
 
 
 class Author(Model):
-    name = fields.CharField(max_length=255)
+    name = fields.CharField(max_length=255, default="", null=False)
 
 
 class Book(Model):
@@ -151,7 +155,7 @@ class ModelTestPydanticMetaBackwardRelations3(Model):
 
 
 class Node(Model):
-    name = fields.CharField(max_length=10)
+    name = fields.CharField(max_length=10, default=generate_unique_string, null=False)
 
 
 class Tree(Model):
@@ -333,7 +337,7 @@ class FloatFields(Model):
     floatnum_null = fields.FloatField(null=True)
 
 
-def raise_if_not_dict_or_list(value: dict | list):
+def raise_if_not_dict_or_list(value: dict | list) -> None:
     if not isinstance(value, (dict, list)):
         raise ValidationError("Value must be a dict or list.")
 
@@ -570,7 +574,7 @@ class Employee(Model):
     def __str__(self):
         return self.name
 
-    async def full_hierarchy__async_for(self, level=0):
+    async def full_hierarchy__async_for(self, level=0) -> str:
         """
         Demonstrates ``async for` to fetch relations
 
@@ -588,7 +592,7 @@ class Employee(Model):
             text.append(await member.full_hierarchy__async_for(level + 1))
         return "\n".join(text)
 
-    async def full_hierarchy__fetch_related(self, level=0):
+    async def full_hierarchy__fetch_related(self, level=0) -> str:
         """
         Demonstrates ``await .fetch_related`` to fetch relations
 
@@ -883,16 +887,18 @@ class NumberSourceField(Model):
 
 
 class StatusQuerySet(QuerySet):
-    def active(self):
+    def active(self) -> QuerySet:
         return self.filter(status=1)
 
 
 class StatusManager(Manager):
-    def __init__(self, model=None, queryset_cls=None) -> None:
+    def __init__(
+        self, model: type[Model] | None = None, queryset_cls: type[QuerySet] | None = None
+    ) -> None:
         super().__init__(model=model)
         self.queryset_cls = queryset_cls or QuerySet
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         return self.queryset_cls(self._model)
 
 
@@ -961,7 +967,7 @@ class OldStyleModel(Model):
     external_id = fields.IntField(index=True)
 
 
-def camelize_var(var_name: str):
+def camelize_var(var_name: str) -> str:
     var_parts: list[str] = var_name.split("_")
     return var_parts[0] + "".join([part.title() for part in var_parts[1:]])
 

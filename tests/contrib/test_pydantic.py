@@ -5,6 +5,7 @@ from pydantic import ConfigDict, ValidationError
 
 from tests.testmodels import (
     Address,
+    Author,
     CamelCaseAliasPerson,
     Employee,
     EnumFields,
@@ -13,10 +14,12 @@ from tests.testmodels import (
     JSONFields,
     ModelTestPydanticMetaBackwardRelations1,
     ModelTestPydanticMetaBackwardRelations2,
+    Node,
     Reporter,
     Team,
     Tournament,
     User,
+    generate_unique_string,
     json_pydantic_default,
 )
 from tortoise.contrib import test
@@ -48,6 +51,12 @@ class TestPydantic(test.TestCase):
         self.Event_Pydantic_non_backward_from_override = pydantic_model_creator(
             Event, meta_override=PydanticMetaOverride, name="Event_non_backward"
         )
+        self.Author_Pydantic = pydantic_model_creator(Author, meta_override=PydanticMetaOverride)
+        # TODO: no exclude
+        # self.Node_Pydantic = pydantic_model_creator(Node, meta_override=PydanticMetaOverride)
+        self.Node_Pydantic = pydantic_model_creator(
+            Node, meta_override=PydanticMetaOverride, exclude=("o2opkmodelwithm2ms",)
+        )
 
         self.tournament = await Tournament.create(name="New Tournament")
         self.reporter = await Reporter.create(name="The Reporter")
@@ -61,6 +70,28 @@ class TestPydantic(test.TestCase):
         await self.event.participants.add(self.team1, self.team2)
         await self.event2.participants.add(self.team1, self.team2)
         self.maxDiff = None
+
+    async def test_with_default_but_not_null(self):
+        author_data = self.Author_Pydantic.model_validate({"id": 1}).model_dump()
+        assert author_data == {"id": 1, "name": ""}
+        # TODO: no name
+        # node_data = self.Node_Pydantic.model_validate({"id": 1}).model_dump()
+        node_data = self.Node_Pydantic.model_validate(
+            {"id": 1, "name": generate_unique_string()}
+        ).model_dump()
+        assert node_data["id"] == 1 and node_data["name"] and isinstance(node_data["name"], str)
+        info = {
+            "input": None,
+            "type": "string_type",
+            "loc": ("name",),
+            "msg": "Input should be a valid string",
+        }
+        with self.assertRaises(ValidationError) as cm:
+            self.Author_Pydantic.model_validate({"id": 1, "name": None})
+        self.assertEqual([info], cm.exception.errors(include_url=False))
+        with self.assertRaises(ValidationError) as cm:
+            self.Node_Pydantic.model_validate({"id": 1, "name": None})
+        self.assertEqual([info], cm.exception.errors(include_url=False))
 
     async def test_backward_relations_with_meta_override(self):
         event_schema = copy.deepcopy(dict(self.Event_Pydantic.model_json_schema()))
