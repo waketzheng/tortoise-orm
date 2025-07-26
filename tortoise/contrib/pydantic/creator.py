@@ -432,20 +432,20 @@ class PydanticModelCreator:
                 description = _br_it(field.docstring or field.description or "")
                 if description:
                     fconfig["description"] = description
-                if field_name in self._optional or (
-                    field.default is not None and not callable(field.default)
-                ):
-                    self._properties[field_name] = (
-                        field_property,
-                        PydanticField(default=field.default, **fconfig),
-                    )
+                if field_name in self._optional:
+                    fconfig["default"] = field.default
+                elif field.default is not None:
+                    if callable(field.default):
+                        fconfig["default_factory"] = field.default
+                    else:
+                        fconfig["default"] = field.default
                 else:
                     if (json_schema_extra.get("nullable") and not is_to_one_relation) or (
                         self._exclude_read_only and json_schema_extra.get("readOnly")
                     ):
                         # see: https://docs.pydantic.dev/latest/migration/#required-optional-and-nullable-fields
                         fconfig["default"] = None
-                    self._properties[field_name] = (field_property, PydanticField(**fconfig))
+                self._properties[field_name] = (field_property, PydanticField(**fconfig))
         elif isinstance(field, ComputedFieldDescription):
             field_property, is_to_one_relation = self._process_computed_field(field), False
             if field_property:

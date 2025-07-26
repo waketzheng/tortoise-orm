@@ -19,7 +19,6 @@ from tests.testmodels import (
     Team,
     Tournament,
     User,
-    generate_unique_string,
     json_pydantic_default,
 )
 from tortoise.contrib import test
@@ -74,11 +73,7 @@ class TestPydantic(test.TestCase):
     async def test_with_default_but_not_null(self):
         author_data = self.Author_Pydantic.model_validate({"id": 1}).model_dump()
         assert author_data == {"id": 1, "name": ""}
-        # TODO: no name
-        # node_data = self.Node_Pydantic.model_validate({"id": 1}).model_dump()
-        node_data = self.Node_Pydantic.model_validate(
-            {"id": 1, "name": generate_unique_string()}
-        ).model_dump()
+        node_data = self.Node_Pydantic.model_validate({"id": 1}).model_dump()
         assert node_data["id"] == 1 and node_data["name"] and isinstance(node_data["name"], str)
         info = {
             "input": None,
