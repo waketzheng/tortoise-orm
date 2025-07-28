@@ -51,8 +51,6 @@ class TestPydantic(test.TestCase):
             Event, meta_override=PydanticMetaOverride, name="Event_non_backward"
         )
         self.Author_Pydantic = pydantic_model_creator(Author, meta_override=PydanticMetaOverride)
-        # TODO: no exclude
-        # self.Node_Pydantic = pydantic_model_creator(Node, meta_override=PydanticMetaOverride)
         self.Node_Pydantic = pydantic_model_creator(
             Node, meta_override=PydanticMetaOverride, exclude=("o2opkmodelwithm2ms",)
         )

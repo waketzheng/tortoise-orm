@@ -14,6 +14,7 @@ from enum import Enum, IntEnum
 from typing import Union
 
 import pytz
+from anyio.lowlevel import checkpoint
 from pydantic import BaseModel, ConfigDict
 
 from tortoise import fields
@@ -37,7 +38,8 @@ def generate_token() -> str:
     return binascii.hexlify(os.urandom(16)).decode("ascii")
 
 
-def generate_unique_string() -> str:
+async def generate_unique_string() -> str:
+    await checkpoint()
     return uuid.uuid4().hex[:10]
 
 

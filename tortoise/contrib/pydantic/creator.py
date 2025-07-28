@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+import functools
 import inspect
 from base64 import b32encode
-from collections.abc import MutableMapping
+from collections.abc import Awaitable, MutableMapping
 from copy import copy
 from enum import Enum, IntEnum
 from hashlib import sha3_224
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, Union
 
+from anyio import from_thread
 from pydantic import ConfigDict, computed_field, create_model
 from pydantic import Field as PydanticField
 from pydantic.fields import ComputedFieldInfo
@@ -98,6 +100,27 @@ def _pydantic_recursion_protector(
         _as_submodel=True,
     )
     return pmc.create_pydantic_model()
+
+
+T_Retval = TypeVar("T_Retval")
+
+
+async def async_to_sync(func: Callable[[], Awaitable[T_Retval]]) -> Callable[[], T_Retval]:
+    """Wrap the async function to be sync(will be run in worker thread)"""
+
+    @functools.wraps(func)
+    def wrapped() -> T_Retval:
+        result: list[T_Retval] = []
+
+        async def runner() -> None:
+            res = await func()
+            result.append(res)
+
+        with from_thread.start_blocking_portal() as portal:
+            portal.call(runner)
+        return result[0]
+
+    return wrapped
 
 
 class FieldMap(MutableMapping[str, Union[Field, ComputedFieldDescription]]):
@@ -432,13 +455,17 @@ class PydanticModelCreator:
                 description = _br_it(field.docstring or field.description or "")
                 if description:
                     fconfig["description"] = description
+                field_default = field.default
                 if field_name in self._optional:
-                    fconfig["default"] = field.default
-                elif field.default is not None:
-                    if callable(field.default):
-                        fconfig["default_factory"] = field.default
+                    fconfig["default"] = field_default
+                elif field_default is not None:
+                    if callable(field_default):
+                        if inspect.iscoroutinefunction(field_default):
+                            fconfig["default_factory"] = async_to_sync(field_default)
+                        else:
+                            fconfig["default_factory"] = field_default
                     else:
-                        fconfig["default"] = field.default
+                        fconfig["default"] = field_default
                 else:
                     if (json_schema_extra.get("nullable") and not is_to_one_relation) or (
                         self._exclude_read_only and json_schema_extra.get("readOnly")
