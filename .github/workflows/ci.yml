@@ -58,7 +58,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - uses: astral-sh/setup-uv@v6
-      - name: Install and configure Poetry
       - name: Install ODBC driver
         run: |
           sudo curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
