@@ -1,3 +1,5 @@
+import importlib.metadata as importlib_metadata
+import re
 import subprocess  # nosec
 import sys
 from pathlib import Path
@@ -5,13 +7,10 @@ from pathlib import Path
 from tortoise import __version__
 
 if sys.version_info >= (3, 11):
-    import tomllib
     from contextlib import chdir
 else:
     import contextlib
     import os
-
-    import tomli as tomllib
 
     class chdir(contextlib.AbstractContextManager):  # Copied from source code of Python3.13
         """Non thread-safe context manager to change the current working directory."""
@@ -28,21 +27,29 @@ else:
             os.chdir(self._old_cwd.pop())
 
 
-def _read_version():
-    text = Path("pyproject.toml").read_text()
-    data = tomllib.loads(text)
-    return data["project"]["version"]
+def _load_version():
+    return importlib_metadata.version("tortoise-orm")
 
 
 def test_version():
-    assert _read_version() == __version__
+    assert _load_version() == __version__
 
 
 def test_added_by_poetry_v2(tmp_path: Path):
     tortoise_orm = Path(__file__).parent.resolve().parent
+    py = "{}.{}".format(*sys.version_info)
     with chdir(tmp_path):
         package = "foo"
-        subprocess.run(["poetry", "new", package])  # nosec
+        subprocess.run(["poetry", "new", package, f"--python=^{py}"])  # nosec
         with chdir(package):
+            subprocess.run(["poetry", "config", "--local", "virtualenvs.in-project", "true"])
+            subprocess.run(["poetry", "env", "use", py])  # nosec
             r = subprocess.run(["poetry", "add", tortoise_orm])  # nosec
             assert r.returncode == 0
+            out = subprocess.run(
+                ["poetry", "run", "pip", "list"],
+                text=True,
+                capture_output=True,
+                encoding="utf-8",
+            ).stdout
+            assert re.search(rf"tortoise-orm\s*{__version__}", out)
