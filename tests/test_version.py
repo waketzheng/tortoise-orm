@@ -1,5 +1,6 @@
 import importlib.metadata as importlib_metadata
 import re
+import shutil
 import subprocess  # nosec
 import sys
 from pathlib import Path
@@ -38,16 +39,19 @@ def test_version():
 def test_added_by_poetry_v2(tmp_path: Path):
     tortoise_orm = Path(__file__).parent.resolve().parent
     py = "{}.{}".format(*sys.version_info)
+    poetry = ["poetry"]
+    if shutil.which(poetry[0]) is None:
+        poetry = ["uvx"] + poetry
     with chdir(tmp_path):
         package = "foo"
-        subprocess.run(["poetry", "new", package, f"--python=^{py}"])  # nosec
+        subprocess.run([*poetry, "new", package, f"--python=^{py}"])  # nosec
         with chdir(package):
-            subprocess.run(["poetry", "config", "--local", "virtualenvs.in-project", "true"])
-            subprocess.run(["poetry", "env", "use", py])  # nosec
-            r = subprocess.run(["poetry", "add", tortoise_orm])  # nosec
+            subprocess.run([*poetry, "config", "--local", "virtualenvs.in-project", "true"])
+            subprocess.run([*poetry, "env", "use", py])  # nosec
+            r = subprocess.run([*poetry, "add", tortoise_orm])  # nosec
             assert r.returncode == 0
             out = subprocess.run(
-                ["poetry", "run", "pip", "list"],
+                [*poetry, "run", "pip", "list"],
                 text=True,
                 capture_output=True,
                 encoding="utf-8",
