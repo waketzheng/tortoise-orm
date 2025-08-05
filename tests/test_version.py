@@ -1,5 +1,6 @@
 import importlib.metadata as importlib_metadata
 import re
+import shlex
 import shutil
 import subprocess  # nosec
 import sys
@@ -36,24 +37,27 @@ def test_version():
     assert _load_version() == __version__
 
 
+def _run_shell(cmd: str, **kw) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(shlex.split(cmd), **kw)  # nosec
+
+
+def _capture_output(cmd: str) -> str:
+    return _run_shell(cmd, text=True, capture_output=True, encoding="utf-8").stdout
+
+
 def test_added_by_poetry_v2(tmp_path: Path):
     tortoise_orm = Path(__file__).parent.resolve().parent
     py = "{}.{}".format(*sys.version_info)
-    poetry = ["poetry"]
-    if shutil.which(poetry[0]) is None:
-        poetry = ["uvx"] + poetry
+    poetry = "poetry"
+    if shutil.which(poetry) is None:
+        poetry = "uvx " + poetry
     with chdir(tmp_path):
         package = "foo"
-        subprocess.run([*poetry, "new", package, f"--python=^{py}"])  # nosec
+        _run_shell(f"{poetry} new {package} --python=^{py}")  # nosec
         with chdir(package):
-            subprocess.run([*poetry, "config", "--local", "virtualenvs.in-project", "true"])
-            subprocess.run([*poetry, "env", "use", py])  # nosec
-            r = subprocess.run([*poetry, "add", tortoise_orm])  # nosec
+            _run_shell(f"{poetry} config --local virtualenvs.in-project true")  # nosec
+            _run_shell(f"{poetry} env use {py}")  # nosec
+            r = _run_shell(f"{poetry} add {tortoise_orm}")  # nosec
             assert r.returncode == 0
-            out = subprocess.run(
-                [*poetry, "run", "pip", "list"],
-                text=True,
-                capture_output=True,
-                encoding="utf-8",
-            ).stdout
+            out = _capture_output(f"{poetry} run pip list")  # nosec
             assert re.search(rf"tortoise-orm\s*{__version__}", out)
