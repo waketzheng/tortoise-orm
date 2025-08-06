@@ -69,7 +69,7 @@ jobs:
         run: make ci
         env:
           UV_SYSTEM_PYTHON: 1
-          UV_PROJECT_ENVIRONMENT: /usr/local/
+          UV_PROJECT_ENVIRONMENT: $(python -c "import sysconfig; print(sysconfig.get_config_var('prefix'))")
       - name: Test FastAPI/Blacksheep/Sanic Example
         run: |
           PYTHONPATH=$DEST_FASTAPI pytest $PYTEST_ARGS $DEST_FASTAPI/_tests.py
@@ -90,7 +90,7 @@ jobs:
           COVERALLS_FLAG_NAME: ${{ matrix.python-version }}
           COVERALLS_PARALLEL: true
           UV_SYSTEM_PYTHON: 1
-          UV_PROJECT_ENVIRONMENT: /usr/local/
+          UV_PROJECT_ENVIRONMENT: $(python -c "import sysconfig; print(sysconfig.get_config_var('prefix'))")
 
   coveralls:
     name: Finish Coveralls
