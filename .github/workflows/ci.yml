@@ -61,10 +61,15 @@ jobs:
           sudo curl https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list -o /etc/apt/sources.list.d/mssql-release.list
           sudo apt-get update
           ACCEPT_EULA=Y sudo apt-get install -y msodbcsql18
+      - name: Show python version and path
+        run: |
+          python -V
+          which python
       - name: Run ci
-        run: uv run make ci
+        run: make ci
         env:
           UV_SYSTEM_PYTHON: 1
+          UV_PROJECT_ENVIRONMENT: /usr/local/
       - name: Test FastAPI/Blacksheep/Sanic Example
         run: |
           PYTHONPATH=$DEST_FASTAPI pytest $PYTEST_ARGS $DEST_FASTAPI/_tests.py
@@ -84,6 +89,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERALLS_FLAG_NAME: ${{ matrix.python-version }}
           COVERALLS_PARALLEL: true
+          UV_SYSTEM_PYTHON: 1
+          UV_PROJECT_ENVIRONMENT: /usr/local/
 
   coveralls:
     name: Finish Coveralls
