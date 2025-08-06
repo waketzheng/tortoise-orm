@@ -61,28 +61,22 @@ jobs:
           sudo curl https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list -o /etc/apt/sources.list.d/mssql-release.list
           sudo apt-get update
           ACCEPT_EULA=Y sudo apt-get install -y msodbcsql18
-      - name: Show python version and path
+      - name: Configurate uv to install in system instead of create venv
         run: |
           python -V
           which python
           python -c "import sysconfig; print(sysconfig.get_config_var('prefix'))"
+          echo "UV_SYSTEM_PYTHON=1" >> $GITHUB_ENV
+          echo "UV_PROJECT_ENVIRONMENT=$(python -c \"import sysconfig; print(sysconfig.get_config_var('prefix'))\")" >> $GITHUB_ENV
       - name: Build
         run: make build
-        env:
-          UV_SYSTEM_PYTHON: 1
-          UV_PROJECT_ENVIRONMENT: $(python -c "import sysconfig; print(sysconfig.get_config_var('prefix'))")
       - name: Check style
         run: |
+          which ruff || uv run which python
           uv run which ruff
           uv run make _check
-        env:
-          UV_SYSTEM_PYTHON: 1
-          UV_PROJECT_ENVIRONMENT: $(python -c "import sysconfig; print(sysconfig.get_config_var('prefix'))")
       - name: Run Test
         run: uv run make _testall
-        env:
-          UV_SYSTEM_PYTHON: 1
-          UV_PROJECT_ENVIRONMENT: $(python -c "import sysconfig; print(sysconfig.get_config_var('prefix'))")
       - name: Test FastAPI/Blacksheep/Sanic Example
         run: |
           PYTHONPATH=$DEST_FASTAPI uv run pytest $PYTEST_ARGS $DEST_FASTAPI/_tests.py
@@ -94,19 +88,16 @@ jobs:
           DEST_SANIC: examples/sanic
           PYTHONDEVMODE: 1
           PYTEST_ARGS: "-n auto --cov=tortoise --cov-append --cov-branch --tb=native -q"
-          UV_SYSTEM_PYTHON: 1
-          UV_PROJECT_ENVIRONMENT: $(python -c "import sysconfig; print(sysconfig.get_config_var('prefix'))")
       - name: Upload Coverage
         run: |
           uv pip install --upgrade coveralls
           uv run coveralls --service=github
           uv run which coveralls
+          which coveralls || uv --version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERALLS_FLAG_NAME: ${{ matrix.python-version }}
           COVERALLS_PARALLEL: true
-          UV_SYSTEM_PYTHON: 1
-          UV_PROJECT_ENVIRONMENT: $(python -c "import sysconfig; print(sysconfig.get_config_var('prefix'))")
 
   coveralls:
     name: Finish Coveralls
