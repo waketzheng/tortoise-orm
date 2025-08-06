@@ -43,7 +43,6 @@ jobs:
       TORTOISE_POSTGRES_PASS: 123456
       TORTOISE_MSSQL_PASS: Abcd12345678
       TORTOISE_MSSQL_DRIVER: ODBC Driver 18 for SQL Server
-      UV_SYSTEM_PYTHON: 1
     strategy:
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
@@ -63,7 +62,9 @@ jobs:
           sudo apt-get update
           ACCEPT_EULA=Y sudo apt-get install -y msodbcsql18
       - name: Run ci
-        run: make ci
+        run: uv run make ci
+        env:
+          UV_SYSTEM_PYTHON: 1
       - name: Test FastAPI/Blacksheep/Sanic Example
         run: |
           PYTHONPATH=$DEST_FASTAPI pytest $PYTEST_ARGS $DEST_FASTAPI/_tests.py
