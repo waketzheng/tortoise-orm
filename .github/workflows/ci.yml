@@ -69,20 +69,17 @@ jobs:
           python -c "import sysconfig;name='prefix';print(sysconfig.get_config_var(name))"
           echo "UV_PROJECT_ENVIRONMENT=$(python -c 'import sysconfig,functools,string,operator;idxs=[15,17,4,5,8,23];chars=string.ascii_lowercase;name=functools.reduce(operator.add,[chars[i] for i in idxs]);print(sysconfig.get_config_var(name))')" >> $GITHUB_ENV
           echo "UV_SYSTEM_PYTHON=1" >> $GITHUB_ENV
-      - name: Build
-        run: make build
+      - name: Install dependecies and Build dists
+        run: make build options=--frozen
       - name: Check style
-        run: |
-          which ruff || uv run which python
-          uv run which ruff
-          uv run make _check
-      - name: Run Test
-        run: uv run make _testall
+        run: make _check
+      - name: Run Tests
+        run: make _testall
       - name: Test FastAPI/Blacksheep/Sanic Example
         run: |
-          PYTHONPATH=$DEST_FASTAPI uv run pytest $PYTEST_ARGS $DEST_FASTAPI/_tests.py
-          PYTHONPATH=$DEST_BLACKSHEEP uv run pytest $PYTEST_ARGS $DEST_BLACKSHEEP/_tests.py
-          PYTHONPATH=$DEST_SANIC uv run pytest $PYTEST_ARGS $DEST_SANIC/_tests.py
+          PYTHONPATH=$DEST_FASTAPI pytest $PYTEST_ARGS $DEST_FASTAPI/_tests.py
+          PYTHONPATH=$DEST_BLACKSHEEP pytest $PYTEST_ARGS $DEST_BLACKSHEEP/_tests.py
+          PYTHONPATH=$DEST_SANIC pytest $PYTEST_ARGS $DEST_SANIC/_tests.py
         env:
           DEST_FASTAPI: examples/fastapi
           DEST_BLACKSHEEP: examples/blacksheep
@@ -90,11 +87,7 @@ jobs:
           PYTHONDEVMODE: 1
           PYTEST_ARGS: "-n auto --cov=tortoise --cov-append --cov-branch --tb=native -q"
       - name: Upload Coverage
-        run: |
-          uv pip install --upgrade coveralls
-          uv run coveralls --service=github
-          uv run which coveralls
-          which coveralls || uv --version
+        run: uvx coveralls --service=github
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERALLS_FLAG_NAME: ${{ matrix.python-version }}
