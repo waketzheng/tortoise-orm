@@ -76,9 +76,11 @@ jobs:
       - name: Test sqlite/asyncpg/aiomysql
         run: |
           python tests/run_parallel.py test_sqlite test_postgres_asyncpg test_mysql
-      - name: Test psycopg/myisam/mssql
+      - name: Test myisam/mssql
         run: |
-          python tests/run_parallel.py test_postgres_psycopg test_mysql_myisam test_mssql
+          python tests/run_parallel.py test_mysql_myisam test_mssql
+      - name: Test psycopg
+        run: make test_postgres_psycopg
       - name: Test asyncmy
         run: make test_mysql_asyncmy
       - name: Test FastAPI/Blacksheep/Sanic Example
