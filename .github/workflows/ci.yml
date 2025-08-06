@@ -69,7 +69,7 @@ jobs:
           ACCEPT_EULA=Y sudo apt-get install -y msodbcsql18
       - name: Run ci
         run: uv run make ci
-      - name: Test FastAPI/Blacksheep Example
+      - name: Test FastAPI/Blacksheep/Sanic Example
         run: |
           PYTHONPATH=$DEST_FASTAPI uv run pytest $PYTEST_ARGS $DEST_FASTAPI/_tests.py
           PYTHONPATH=$DEST_BLACKSHEEP uv run pytest $PYTEST_ARGS $DEST_BLACKSHEEP/_tests.py
