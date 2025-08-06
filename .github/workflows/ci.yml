@@ -74,7 +74,11 @@ jobs:
       - name: Check style
         run: make _check
       - name: Run Tests
-        run: make _testall
+        run: |
+          python tests/run_parallel.py test_sqlite test_postgres_asyncpg test_mysql_myisam test_mssql
+          python tests/run_parallel.py test_postgres_psycopg test_mysql
+      - name: Test asyncmy
+        run: make test_mysql_asyncmy
       - name: Test FastAPI/Blacksheep/Sanic Example
         run: |
           PYTHONPATH=$DEST_FASTAPI pytest $PYTEST_ARGS $DEST_FASTAPI/_tests.py
