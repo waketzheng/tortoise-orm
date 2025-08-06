@@ -73,10 +73,12 @@ jobs:
         run: make build options=--frozen
       - name: Check style
         run: make _check
-      - name: Run Tests
+      - name: Test sqlite/postgres/mysql
         run: |
-          python tests/run_parallel.py test_sqlite test_postgres_asyncpg test_mysql_myisam test_mssql
-          python tests/run_parallel.py test_postgres_psycopg test_mysql
+          python tests/run_parallel.py test_sqlite test_postgres_asyncpg test_mysql
+      - name: Test postgres/mysql/mssql
+        run: |
+          python tests/run_parallel.py test_postgres_psycopg test_mysql_myisam test_mssql
       - name: Test asyncmy
         run: make test_mysql_asyncmy
       - name: Test FastAPI/Blacksheep/Sanic Example
