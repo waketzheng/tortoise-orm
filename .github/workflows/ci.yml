@@ -65,18 +65,18 @@ jobs:
         run: |
           python -V
           which python
-          python -c 'import sysconfig,functools,string,operator;idxs=[15,17,4,5,8,23];chars=string.ascii_lowercase;name=functools.reduce(operator.add,[chars[i] for i in idxs]);assert name=="prefix"'
-          python -c "import sysconfig;name='prefix';print(sysconfig.get_config_var(name))"
-          echo "UV_PROJECT_ENVIRONMENT=$(python -c 'import sysconfig,functools,string,operator;idxs=[15,17,4,5,8,23];chars=string.ascii_lowercase;name=functools.reduce(operator.add,[chars[i] for i in idxs]);print(sysconfig.get_config_var(name))')" >> $GITHUB_ENV
+          python -c "name='prefix';import sysconfig;print(sysconfig.get_config_var(name))"
+          python -c 'import functools,string,operator;idxs=[15,17,4,5,8,23];chars=string.ascii_lowercase;name=functools.reduce(operator.add,[chars[i] for i in idxs]);assert name=="prefix"'
+          echo "UV_PROJECT_ENVIRONMENT=$(python -c 'import functools,string,operator;idxs=[15,17,4,5,8,23];chars=string.ascii_lowercase;name=functools.reduce(operator.add,[chars[i] for i in idxs]);import sysconfig;print(sysconfig.get_config_var(name))')" >> $GITHUB_ENV
           echo "UV_SYSTEM_PYTHON=1" >> $GITHUB_ENV
       - name: Install dependecies and Build dists
         run: make build options=--frozen
       - name: Check style
         run: make _check
-      - name: Test sqlite/postgres/mysql
+      - name: Test sqlite/asyncpg/aiomysql
         run: |
           python tests/run_parallel.py test_sqlite test_postgres_asyncpg test_mysql
-      - name: Test postgres/mysql/mssql
+      - name: Test psycopg/myisam/mssql
         run: |
           python tests/run_parallel.py test_postgres_psycopg test_mysql_myisam test_mssql
       - name: Test asyncmy
