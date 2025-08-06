@@ -65,15 +65,24 @@ jobs:
         run: |
           python -V
           which python
+          python -c "import sysconfig; print(sysconfig.get_config_var('prefix'))"
       - name: Build
         run: make build
         env:
           UV_SYSTEM_PYTHON: 1
           UV_PROJECT_ENVIRONMENT: $(python -c "import sysconfig; print(sysconfig.get_config_var('prefix'))")
       - name: Check style
-        run: uv run make _check
+        run: |
+          uv run which ruff
+          uv run make _check
+        env:
+          UV_SYSTEM_PYTHON: 1
+          UV_PROJECT_ENVIRONMENT: $(python -c "import sysconfig; print(sysconfig.get_config_var('prefix'))")
       - name: Run Test
         run: uv run make _testall
+        env:
+          UV_SYSTEM_PYTHON: 1
+          UV_PROJECT_ENVIRONMENT: $(python -c "import sysconfig; print(sysconfig.get_config_var('prefix'))")
       - name: Test FastAPI/Blacksheep/Sanic Example
         run: |
           PYTHONPATH=$DEST_FASTAPI uv run pytest $PYTEST_ARGS $DEST_FASTAPI/_tests.py
@@ -85,11 +94,12 @@ jobs:
           DEST_SANIC: examples/sanic
           PYTHONDEVMODE: 1
           PYTEST_ARGS: "-n auto --cov=tortoise --cov-append --cov-branch --tb=native -q"
+          UV_SYSTEM_PYTHON: 1
+          UV_PROJECT_ENVIRONMENT: $(python -c "import sysconfig; print(sysconfig.get_config_var('prefix'))")
       - name: Upload Coverage
         run: |
           uv pip install --upgrade coveralls
           uv run coveralls --service=github
-          uv run which ruff
           uv run which coveralls
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
