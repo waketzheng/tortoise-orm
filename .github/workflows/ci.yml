@@ -88,8 +88,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERALLS_FLAG_NAME: ${{ matrix.python-version }}
           COVERALLS_PARALLEL: true
-      - name: Minimize uv cache
-        run: uv cache prune --ci
 
   coveralls:
     name: Finish Coveralls
