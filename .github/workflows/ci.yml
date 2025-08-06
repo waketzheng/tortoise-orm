@@ -43,25 +43,19 @@ jobs:
       TORTOISE_POSTGRES_PASS: 123456
       TORTOISE_MSSQL_PASS: Abcd12345678
       TORTOISE_MSSQL_DRIVER: ODBC Driver 18 for SQL Server
-      UV_CACHE_DIR: /tmp/.uv-cache
       UV_SYSTEM_PYTHON: 1
     strategy:
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/cache@v4
-        with:
-          path: /tmp/.uv-cache
-          key: uv-${{ runner.os }}-${{ hashFiles('**/uv.lock') }}
-          restore-keys: |
-            uv-${{ runner.os }}-${{ hashFiles('**/uv.lock') }}
-            uv-${{ runner.os }}
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
       - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
       - name: Install ODBC driver
         run: |
           sudo curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
@@ -69,12 +63,12 @@ jobs:
           sudo apt-get update
           ACCEPT_EULA=Y sudo apt-get install -y msodbcsql18
       - name: Run ci
-        run: uv run make ci
+        run: make ci
       - name: Test FastAPI/Blacksheep/Sanic Example
         run: |
-          PYTHONPATH=$DEST_FASTAPI uv run pytest $PYTEST_ARGS $DEST_FASTAPI/_tests.py
-          PYTHONPATH=$DEST_BLACKSHEEP uv run pytest $PYTEST_ARGS $DEST_BLACKSHEEP/_tests.py
-          PYTHONPATH=$DEST_SANIC uv run pytest $PYTEST_ARGS $DEST_SANIC/_tests.py
+          PYTHONPATH=$DEST_FASTAPI pytest $PYTEST_ARGS $DEST_FASTAPI/_tests.py
+          PYTHONPATH=$DEST_BLACKSHEEP pytest $PYTEST_ARGS $DEST_BLACKSHEEP/_tests.py
+          PYTHONPATH=$DEST_SANIC pytest $PYTEST_ARGS $DEST_SANIC/_tests.py
         env:
           DEST_FASTAPI: examples/fastapi
           DEST_BLACKSHEEP: examples/blacksheep
@@ -83,7 +77,7 @@ jobs:
           PYTEST_ARGS: "-n auto --cov=tortoise --cov-append --cov-branch --tb=native -q"
       - name: Upload Coverage
         run: |
-          pip3 install --upgrade coveralls
+          uv pip install --upgrade coveralls
           coveralls --service=github
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
