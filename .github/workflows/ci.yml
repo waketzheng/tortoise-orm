@@ -73,14 +73,15 @@ jobs:
         run: make build options=--frozen
       - name: Check style
         run: make _check
-      - name: Test sqlite/asyncpg/aiomysql
+      - name: Test asyncpg/aiomysql
         run: |
-          python tests/run_parallel.py test_sqlite test_postgres_asyncpg test_mysql
+          python tests/run_parallel.py test_postgres_asyncpg test_mysql
       - name: Test myisam/mssql
         run: |
           python tests/run_parallel.py test_mysql_myisam test_mssql
-      - name: Test psycopg
-        run: make test_postgres_psycopg
+      - name: Test sqlite/psycopg
+        run: |
+          python tests/run_parallel.py test_sqlite test_postgres_psycopg
       - name: Test asyncmy
         run: make test_mysql_asyncmy
       - name: Test FastAPI/Blacksheep/Sanic Example
