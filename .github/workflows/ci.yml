@@ -73,8 +73,6 @@ jobs:
         run: make build options=--frozen
       - name: Check style
         run: make _check
-      - name: Run Tests
-        run: make _testall
       - name: Test FastAPI/Blacksheep/Sanic Example
         run: |
           PYTHONPATH=$DEST_FASTAPI pytest $PYTEST_ARGS $DEST_FASTAPI/_tests.py
@@ -86,6 +84,8 @@ jobs:
           DEST_SANIC: examples/sanic
           PYTHONDEVMODE: 1
           PYTEST_ARGS: "-n auto --cov=tortoise --cov-append --cov-branch --tb=native -q"
+      - name: Run Tests
+        run: make _testall
       - name: Upload Coverage
         run: uvx coveralls --service=github
         env:
