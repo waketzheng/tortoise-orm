@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import abc
-import asyncio
-from asyncio.events import AbstractEventLoop
 from collections.abc import Callable, Coroutine
 from functools import wraps
 from typing import TYPE_CHECKING, Any, SupportsInt, TypeVar
 
+import anyio
 from pypika_tortoise import PostgreSQLQuery
 
 from tortoise.backends.base.client import (
@@ -20,6 +19,8 @@ from tortoise.backends.base_postgres.executor import BasePostgresExecutor
 from tortoise.backends.base_postgres.schema_generator import BasePostgresSchemaGenerator
 
 if TYPE_CHECKING:
+    from asyncio.events import AbstractEventLoop
+
     from asyncpg.connection import Connection
     from psycopg import AsyncConnection
 
@@ -88,7 +89,7 @@ class BasePostgresClient(BaseDBAsyncClient, abc.ABC):
         self._template: dict = {}
         self._pool = None
         self._connection = None
-        self._pool_init_lock = asyncio.Lock()
+        self._pool_init_lock = anyio.Lock()
 
     @abc.abstractmethod
     async def create_connection(self, with_db: bool) -> None:

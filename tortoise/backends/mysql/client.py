@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import asyncio
 from collections.abc import Callable, Coroutine
 from functools import wraps
 from itertools import count
 from typing import Any, SupportsInt, TypeVar
+
+import anyio
 
 try:
     import asyncmy as mysql
@@ -106,7 +107,7 @@ class MySQLClient(BaseDBAsyncClient):
         self._template: dict = {}
         self._pool: mysql.Pool | None = None
         self._connection = None
-        self._pool_init_lock = asyncio.Lock()
+        self._pool_init_lock = anyio.Lock()
 
     async def create_connection(self, with_db: bool) -> None:
         if charset_by_name(self.charset) is None:
@@ -228,7 +229,7 @@ class TransactionWrapper(MySQLClient, TransactionalDBClient):
     def __init__(self, connection: MySQLClient) -> None:
         self.connection_name = connection.connection_name
         self._connection: mysql.Connection = connection._connection
-        self._lock = asyncio.Lock()
+        self._lock = anyio.Lock()
         self._savepoint: str | None = None
         self.log = connection.log
         self._finalized: bool = False

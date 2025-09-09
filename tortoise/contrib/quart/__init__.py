@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 from collections.abc import Iterable
 from types import ModuleType
 
+from anyio import from_thread
 from quart import Quart  # pylint: disable=E0401
 
 from tortoise import Tortoise, connections
@@ -108,5 +108,5 @@ def register_tortoise(
             await connections.close_all()
 
         logger.setLevel(logging.DEBUG)
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(inner())
+        with from_thread.start_blocking_portal() as portal:
+            portal.call(inner)

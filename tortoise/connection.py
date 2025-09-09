@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import asyncio
 import contextvars
 import importlib
 from contextvars import ContextVar
 from copy import copy
 from typing import TYPE_CHECKING, Any
+
+import anyio
 
 from tortoise.backends.base.config_generator import expand_db_url
 from tortoise.exceptions import ConfigurationError
@@ -193,8 +194,9 @@ class ConnectionHandler:
         :param discard:
             If ``False``, all connection objects are closed but `retained` in the storage.
         """
-        tasks = [conn.close() for conn in self.all()]
-        await asyncio.gather(*tasks)
+        async with anyio.create_task_group() as tg:
+            for conn in self.all():
+                tg.start_soon(conn.close)
         if discard:
             for alias in self.db_config:
                 self.discard(alias)

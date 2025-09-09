@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import asyncio
 from collections.abc import Callable
 from contextlib import _AsyncGeneratorContextManager
 from ssl import SSLContext
 from typing import Any, TypeVar, cast
 
+import anyio
 import psycopg
 import psycopg.conninfo
 import psycopg.pq
@@ -206,7 +206,7 @@ class TransactionWrapper(PsycopgClient, base_client.TransactionalDBClient):
 
     def __init__(self, connection: PsycopgClient) -> None:
         self._connection: psycopg.AsyncConnection = connection._connection
-        self._lock = asyncio.Lock()
+        self._lock = anyio.Lock()
         self.log = connection.log
         self.connection_name = connection.connection_name
         self._transaction: _AsyncGeneratorContextManager[psycopg.AsyncTransaction] | None = None

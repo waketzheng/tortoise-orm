@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import inspect
 import re
 from collections.abc import Awaitable, Callable, Generator, Iterable
@@ -8,6 +7,7 @@ from copy import copy, deepcopy
 from functools import partial
 from typing import Any, TypedDict, TypeVar, cast
 
+import anyio
 from pypika_tortoise import Order, Query, Table
 from pypika_tortoise.terms import Term
 from typing_extensions import Self
@@ -928,8 +928,9 @@ class Model(metaclass=ModelMeta):
 
     async def _wait_for_listeners(self, signal: Signals, *listener_args) -> None:
         cls_listeners = self._listeners.get(signal, {}).get(self.__class__, [])
-        listeners = [listener(self.__class__, self, *listener_args) for listener in cls_listeners]
-        await asyncio.gather(*listeners)
+        async with anyio.create_task_group() as tg:
+            for listener in cls_listeners:
+                tg.start_soon(listener, self.__class__, self, *listener_args)
 
     async def _pre_delete(self, using_db: BaseDBAsyncClient | None = None) -> None:
         await self._wait_for_listeners(Signals.pre_delete, using_db)

@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-import asyncio
 import datetime
 import decimal
 from collections.abc import Callable, Iterable, Sequence
 from copy import copy
 from typing import TYPE_CHECKING, Any, cast
 
+import anyio
+from anyio.lowlevel import checkpoint
 from pypika_tortoise import JoinType, Parameter, Table
 from pypika_tortoise.queries import QueryBuilder
 
@@ -111,7 +112,7 @@ class BaseExecutor:
             if row_idx != 0 and row_idx % CHUNK_SIZE == 0:
                 # Forcibly yield to the event loop to avoid blocking the event loop
                 # when selecting a large number of rows
-                await asyncio.sleep(0)
+                await checkpoint()
 
             if self.select_related_idx:
                 _, current_idx, _, _, path = self.select_related_idx[0]
@@ -555,11 +556,10 @@ class BaseExecutor:
     async def _execute_prefetch_queries(self, instance_list: Iterable[Model]) -> Iterable[Model]:
         if instance_list and (self.prefetch_map or self._prefetch_queries):
             self._make_prefetch_queries()
-            prefetch_tasks = []
-            for field, related_queries in self._prefetch_queries.items():
-                for related_query in related_queries:
-                    prefetch_tasks.append(self._do_prefetch(instance_list, field, related_query))
-            await asyncio.gather(*prefetch_tasks)
+            async with anyio.create_task_group() as tg:
+                for field, related_queries in self._prefetch_queries.items():
+                    for related_query in related_queries:
+                        tg.start_soon(self._do_prefetch, instance_list, field, related_query)
 
         return instance_list
 
