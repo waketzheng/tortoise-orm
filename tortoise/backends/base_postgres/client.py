@@ -5,7 +5,7 @@ from collections.abc import Callable, Coroutine
 from functools import wraps
 from typing import TYPE_CHECKING, Any, SupportsInt, TypeVar
 
-import anyio
+from anyio import Lock
 from pypika_tortoise import PostgreSQLQuery
 
 from tortoise.backends.base.client import (
@@ -89,7 +89,7 @@ class BasePostgresClient(BaseDBAsyncClient, abc.ABC):
         self._template: dict = {}
         self._pool = None
         self._connection = None
-        self._pool_init_lock = anyio.Lock()
+        self._pool_init_lock = Lock()
 
     @abc.abstractmethod
     async def create_connection(self, with_db: bool) -> None:

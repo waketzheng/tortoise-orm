@@ -5,7 +5,7 @@ from functools import wraps
 from itertools import count
 from typing import Any, SupportsInt, TypeVar
 
-import anyio
+from anyio import Lock
 
 try:
     import asyncmy as mysql
@@ -107,7 +107,7 @@ class MySQLClient(BaseDBAsyncClient):
         self._template: dict = {}
         self._pool: mysql.Pool | None = None
         self._connection = None
-        self._pool_init_lock = anyio.Lock()
+        self._pool_init_lock = Lock()
 
     async def create_connection(self, with_db: bool) -> None:
         if charset_by_name(self.charset) is None:
@@ -229,7 +229,7 @@ class TransactionWrapper(MySQLClient, TransactionalDBClient):
     def __init__(self, connection: MySQLClient) -> None:
         self.connection_name = connection.connection_name
         self._connection: mysql.Connection = connection._connection
-        self._lock = anyio.Lock()
+        self._lock = Lock()
         self._savepoint: str | None = None
         self.log = connection.log
         self._finalized: bool = False

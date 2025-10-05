@@ -5,12 +5,12 @@ from contextlib import _AsyncGeneratorContextManager
 from ssl import SSLContext
 from typing import Any, TypeVar, cast
 
-import anyio
 import psycopg
 import psycopg.conninfo
 import psycopg.pq
 import psycopg.rows
 import psycopg_pool
+from anyio import Lock
 from pypika_tortoise import SqlContext
 from pypika_tortoise.dialects.postgresql import PostgreSQLQuery, PostgreSQLQueryBuilder
 from pypika_tortoise.terms import Parameterizer
@@ -206,7 +206,7 @@ class TransactionWrapper(PsycopgClient, base_client.TransactionalDBClient):
 
     def __init__(self, connection: PsycopgClient) -> None:
         self._connection: psycopg.AsyncConnection = connection._connection
-        self._lock = anyio.Lock()
+        self._lock = Lock()
         self.log = connection.log
         self.connection_name = connection.connection_name
         self._transaction: _AsyncGeneratorContextManager[psycopg.AsyncTransaction] | None = None

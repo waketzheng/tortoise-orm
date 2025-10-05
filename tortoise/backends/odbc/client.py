@@ -5,9 +5,9 @@ from collections.abc import Callable, Coroutine
 from functools import wraps
 from typing import Any, TypeVar, Union
 
-import anyio
 import asyncodbc
 import pyodbc
+from anyio import Lock
 
 from tortoise import BaseDBAsyncClient
 from tortoise.backends.base.client import (
@@ -73,7 +73,7 @@ class ODBCClient(BaseDBAsyncClient, ABC):
         self._template: dict = {}
         self._pool: asyncodbc.Pool | None = None
         self._connection = None
-        self._pool_init_lock = anyio.Lock()
+        self._pool_init_lock = Lock()
 
     async def create_connection(self, with_db: bool) -> None:
         self._template = {
@@ -169,7 +169,7 @@ class ODBCTransactionWrapper(TransactionalDBClient):
         self.database = connection.database
         self.connection_name = connection.connection_name
         self._connection: asyncodbc.Connection = connection._connection
-        self._lock = anyio.Lock()
+        self._lock = Lock()
         self.log = connection.log
         self._finalized: bool = False
         self.fetch_inserted = connection.fetch_inserted

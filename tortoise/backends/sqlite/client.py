@@ -8,7 +8,7 @@ from itertools import count
 from typing import Any, TypeVar, cast
 
 import aiosqlite
-import anyio
+from anyio import Lock
 from pypika_tortoise import SQLLiteQuery
 
 from tortoise.backends.base.client import (
@@ -74,7 +74,7 @@ class SqliteClient(BaseDBAsyncClient):
         self.pragmas.setdefault("foreign_keys", "ON")
 
         self._connection: aiosqlite.Connection | None = None
-        self._lock = anyio.Lock()
+        self._lock = Lock()
 
     async def create_connection(self, with_db: bool) -> None:
         if not self._connection:  # pragma: no branch
@@ -180,7 +180,7 @@ class SqliteTransactionContext(TransactionContext):
 
     __slots__ = ("connection", "connection_name", "token", "_trxlock")
 
-    def __init__(self, connection: Any, trxlock: anyio.Lock) -> None:
+    def __init__(self, connection: Any, trxlock: Lock) -> None:
         self.connection = connection
         self.connection_name = connection.connection_name
         self._trxlock = trxlock
@@ -216,7 +216,7 @@ class SqliteTransactionWrapper(SqliteClient, TransactionalDBClient):
         self.capabilities = connection.capabilities
         self.connection_name = connection.connection_name
         self._connection: aiosqlite.Connection = cast(aiosqlite.Connection, connection._connection)
-        self._lock = anyio.Lock()
+        self._lock = Lock()
         self._savepoint: str | None = None
         self.log = connection.log
         self._finalized = False

@@ -4,7 +4,7 @@ import abc
 from collections.abc import Sequence
 from typing import Any, Generic, TypeVar, cast
 
-import anyio
+from anyio import Lock
 from pypika_tortoise import Query
 
 from tortoise.backends.base.executor import BaseExecutor
@@ -251,8 +251,8 @@ class ConnectionWrapper(Generic[T_conn]):
 
     __slots__ = ("connection", "_lock", "client")
 
-    def __init__(self, lock: anyio.Lock, client: BaseDBAsyncClient) -> None:
-        self._lock: anyio.Lock = lock
+    def __init__(self, lock: Lock, client: BaseDBAsyncClient) -> None:
+        self._lock: Lock = lock
         self.client = client
         self.connection: T_conn = client._connection
 
@@ -288,7 +288,7 @@ class TransactionContextPooled(TransactionContext):
 
     __slots__ = ("client", "connection_name", "token", "_pool_init_lock")
 
-    def __init__(self, client: TransactionalDBClient, pool_init_lock: anyio.Lock) -> None:
+    def __init__(self, client: TransactionalDBClient, pool_init_lock: Lock) -> None:
         self.client = client
         self.connection_name = client.connection_name
         self._pool_init_lock = pool_init_lock
@@ -350,7 +350,7 @@ class PoolConnectionWrapper(Generic[T_conn]):
 
     __slots__ = ("client", "connection", "_pool_init_lock")
 
-    def __init__(self, client: BaseDBAsyncClient, pool_init_lock: anyio.Lock) -> None:
+    def __init__(self, client: BaseDBAsyncClient, pool_init_lock: Lock) -> None:
         self.client = client
         self.connection: T_conn | None = None
         self._pool_init_lock = pool_init_lock
