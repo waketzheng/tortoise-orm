@@ -123,7 +123,6 @@ include = ["CHANGELOG.rst", "LICENSE", "README.rst"]
 [tool.mypy]
 pretty = true
 exclude = ["docs"]
-python_version = "3.9"
 ignore_missing_imports = true
 check_untyped_defs = true
 disallow_subclassing_any = true
