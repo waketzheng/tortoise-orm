@@ -1,26 +1,30 @@
 # mypy: no-disallow-untyped-decorators
 # pylint: disable=E0611,E0401
 import pytest
-import pytest_asyncio
 from blacksheep import JSONContent
 from blacksheep.testing import TestClient
 from models import Users
 from server import app
 
 
-@pytest_asyncio.fixture(scope="session", loop_scope="session")
+@pytest.fixture(scope="session")
+def anyio_backend() -> str:
+    return "asyncio"
+
+
+@pytest.fixture(scope="session")
 async def client(api):
     return TestClient(api)
 
 
-@pytest_asyncio.fixture(scope="session", loop_scope="session")
+@pytest.fixture(scope="session")
 async def api():
     await app.start()
     yield app
     await app.stop()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_get_uses_list(client: TestClient) -> None:
     username = "john"
     await Users.create(username=username)
@@ -39,7 +43,7 @@ async def test_get_uses_list(client: TestClient) -> None:
     assert str(user_obj.id) == user_id  # nosec
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_create_user(client: TestClient) -> None:
     username = "john"
 
@@ -54,7 +58,7 @@ async def test_create_user(client: TestClient) -> None:
     assert str(user_obj.id) == user_id  # nosec
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_update_user(client: TestClient) -> None:  # nosec
     user = await Users.create(username="john")
 
@@ -70,7 +74,7 @@ async def test_update_user(client: TestClient) -> None:  # nosec
     assert str(user_obj.id) == user_id  # nosec
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_delete_user(client: TestClient) -> None:
     user = await Users.create(username="john")
 
