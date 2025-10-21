@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from asyncio import Lock
 from collections.abc import Callable
 from typing import Any, TypeVar
 
 import asyncpg
-from anyio import Lock, fail_after
+from anyio import fail_after
 from asyncpg.transaction import Transaction
 
 from tortoise.backends.asyncpg.executor import AsyncpgExecutor

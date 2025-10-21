@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from abc import ABC
+from asyncio import Lock
 from collections.abc import Callable, Coroutine
 from functools import wraps
 from typing import Any, TypeVar, Union
 
 import asyncodbc
 import pyodbc
-from anyio import Lock
 
 from tortoise import BaseDBAsyncClient
 from tortoise.backends.base.client import (

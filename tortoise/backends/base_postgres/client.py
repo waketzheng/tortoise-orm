@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import abc
+from asyncio import Lock
 from collections.abc import Callable, Coroutine
 from functools import wraps
 from typing import TYPE_CHECKING, Any, SupportsInt, TypeVar
 
-from anyio import Lock
 from pypika_tortoise import PostgreSQLQuery
 
 from tortoise.backends.base.client import (

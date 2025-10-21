@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from asyncio import Lock
 from collections.abc import Callable
 from contextlib import _AsyncGeneratorContextManager
 from ssl import SSLContext
@@ -10,7 +11,6 @@ import psycopg.conninfo
 import psycopg.pq
 import psycopg.rows
 import psycopg_pool
-from anyio import Lock
 from pypika_tortoise import SqlContext
 from pypika_tortoise.dialects.postgresql import PostgreSQLQuery, PostgreSQLQueryBuilder
 from pypika_tortoise.terms import Parameterizer

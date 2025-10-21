@@ -1,11 +1,10 @@
 from __future__ import annotations
 
+from asyncio import Lock
 from collections.abc import Callable, Coroutine
 from functools import wraps
 from itertools import count
 from typing import Any, SupportsInt, TypeVar
-
-from anyio import Lock
 
 try:
     import asyncmy as mysql

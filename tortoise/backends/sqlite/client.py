@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import os
 import sqlite3
+from asyncio import Lock
 from collections.abc import Callable, Coroutine, Sequence
 from functools import wraps
 from itertools import count
 from typing import Any, TypeVar, cast
 
 import aiosqlite
-from anyio import Lock
 from pypika_tortoise import SQLLiteQuery
 
 from tortoise.backends.base.client import (

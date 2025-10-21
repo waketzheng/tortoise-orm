@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import abc
+from asyncio import Lock
 from collections.abc import Sequence
 from typing import Any, Generic, TypeVar, cast
 
-from anyio import Lock
 from pypika_tortoise import Query
 
 from tortoise.backends.base.executor import BaseExecutor
