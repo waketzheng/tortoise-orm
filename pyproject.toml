@@ -91,6 +91,7 @@ contrib=[
     "aiohttp",
     # BlackSheep support
     "blacksheep>=2.0.8",
+    "PyJWT >=2.10.1; python_version < '3.10'",
 ]
 test = [
     # Test tools
