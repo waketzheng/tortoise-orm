@@ -40,6 +40,14 @@ from tortoise.fields.relational import (
     ReverseRelation,
 )
 
+# For Django compatible
+from .data import BigIntField as BigIntegerField
+from .data import DatetimeField as DateTimeField
+from .data import IntField as IntegerField
+from .data import SmallIntField as SmallIntegerField
+from .data import TimeDeltaField as DurationField
+from .relational import ForeignKeyField as ForeignKey
+
 __all__ = [
     "CASCADE",
     "RESTRICT",
@@ -76,4 +84,10 @@ __all__ = [
     "OneToOneNullableRelation",
     "OneToOneRelation",
     "ReverseRelation",
+    "DateTimeField",
+    "DurationField",
+    "IntegerField",
+    "BigIntegerField",
+    "SmallIntegerField",
+    "ForeignKey",
 ]

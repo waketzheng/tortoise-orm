@@ -213,8 +213,24 @@ class MetaInfo:
         self.abstract: bool = getattr(meta, "abstract", False)
         self.manager: Manager = getattr(meta, "manager", Manager())
         self.db_table: str = getattr(meta, "table", "")
+        if hasattr(meta, "db_table"):  # For django compatible
+            db_table = meta.db_table
+            if not self.db_table:
+                self.db_table = db_table
+            elif self.db_table != db_table:
+                raise ConfigurationError(
+                    "Value conflict in Meta class. Please use either 'table' or 'db_table', not both of them!"
+                )
         self.schema: str | None = getattr(meta, "schema", None)
         self.app: str | None = getattr(meta, "app", None)
+        if hasattr(meta, "app_label"):  # For django compatible
+            app_label = meta.app_label
+            if self.app is None:
+                self.app = app_label
+            elif self.app != app_label:
+                raise ConfigurationError(
+                    "Value conflict in Meta class. Please use either 'app' or 'app_label', not both of them!"
+                )
         self.unique_together: tuple[tuple[str, ...], ...] = get_together(meta, "unique_together")
         self.indexes: tuple[tuple[str, ...] | Index, ...] = get_together(meta, "indexes")
         self._default_ordering: tuple[tuple[str, Order], ...] = prepare_default_ordering(meta)

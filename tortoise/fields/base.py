@@ -216,6 +216,11 @@ class Field(Generic[VALUE], metaclass=_FieldMeta):
         if primary_key:
             db_index = True
             unique = True
+        if db_column := kwargs.get("db_column"):  # For Django compatible
+            if not source_field:
+                source_field = db_column
+            elif source_field != db_column:
+                warnings.warn("Ignore 'db_column' as 'source_field' is not None", stacklevel=1)
         self.source_field = source_field
         self.generated = generated
         self.pk = bool(primary_key)
@@ -224,6 +229,11 @@ class Field(Generic[VALUE], metaclass=_FieldMeta):
         self.unique = unique
         self.index = bool(db_index)
         self.model_field_name = ""
+        if verbose_name := kwargs.get("verbose_name"):  # For Django compatible
+            if not description:
+                description = verbose_name
+            elif description != verbose_name:
+                warnings.warn("Ignore 'verbose_name' as 'description' is not None", stacklevel=1)
         self.description = description
         self.docstring: str | None = None
         self.validators: list[Validator | Callable] = validators or []
