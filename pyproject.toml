@@ -63,7 +63,6 @@ dev = [
     # Linter tools
     "mypy",
     "ruff",
-    "darglint",
     "pylint",
     "bandit",
     "codespell",
