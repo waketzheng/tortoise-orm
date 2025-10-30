@@ -306,8 +306,16 @@ class RelationalField(Field[MODEL]):
         return desc
 
     @classmethod
-    def validate_model_name(cls, model_name: str) -> None:
-        if len(model_name.split(".")) != 2:
+    def validate_model_name(cls, model_name: str | type[Model]) -> None:
+        if not isinstance(model_name, str):
+            model_class: type[Model] = model_name
+            if not hasattr(model_class, "_meta"):
+                raise ConfigurationError(
+                    "model_name must be string or tortoise.models.Model's subclass"
+                )
+        elif model_name == "self":
+            ...
+        elif len(model_name.split(".")) != 2:
             field_type = cls.__name__.replace("Instance", "")
             raise ConfigurationError(f'{field_type} accepts model name in format "app.Model"')
 
@@ -315,7 +323,7 @@ class RelationalField(Field[MODEL]):
 class ForeignKeyFieldInstance(RelationalField[MODEL]):
     def __init__(
         self,
-        model_name: str,
+        model_name: type[Model] | Literal["self"] | str,
         related_name: str | None | Literal[False] = None,
         on_delete: OnDelete = CASCADE,
         **kwargs: Any,
@@ -358,12 +366,11 @@ class BackwardFKRelation(RelationalField[MODEL]):
 class OneToOneFieldInstance(ForeignKeyFieldInstance[MODEL]):
     def __init__(
         self,
-        model_name: str,
+        model_name: type[Model] | Literal["self"] | str,
         related_name: str | None | Literal[False] = None,
         on_delete: OnDelete = CASCADE,
         **kwargs: Any,
     ) -> None:
-        self.validate_model_name(model_name)
         super().__init__(model_name, related_name, on_delete, unique=True, **kwargs)
 
 
@@ -376,7 +383,7 @@ class ManyToManyFieldInstance(RelationalField[MODEL]):
 
     def __init__(
         self,
-        model_name: str,
+        model_name: type[Model] | Literal["self"] | str,
         through: str | None = None,
         forward_key: str | None = None,
         backward_key: str = "",
@@ -397,9 +404,16 @@ class ManyToManyFieldInstance(RelationalField[MODEL]):
             unique = kwargs.pop("create_unique_index")
         super().__init__(field_type, unique=unique, **kwargs)
         self.validate_model_name(model_name)
-        self.model_name: str = model_name
+        self.model_name = model_name
         self.related_name: str = related_name
-        self.forward_key: str = forward_key or f"{model_name.split('.')[1].lower()}_id"
+        if not forward_key:
+            if not isinstance(model_name, str):
+                forward_key = f"{model_name.__name__.lower()}_id"
+            elif model_name == "self":
+                forward_key = "self_id"  # TODO: compatible
+            else:
+                forward_key = f"{model_name.split('.')[1].lower()}_id"
+        self.forward_key: str = forward_key
         self.backward_key: str = backward_key
         self.through: str = through  # type: ignore
         self._generated: bool = False
@@ -419,7 +433,7 @@ class ManyToManyFieldInstance(RelationalField[MODEL]):
 
 @overload
 def OneToOneField(
-    model_name: str,
+    model_name: type[Model] | Literal["self"] | str,
     related_name: str | None | Literal[False] = None,
     on_delete: OnDelete = CASCADE,
     db_constraint: bool = True,
@@ -431,7 +445,7 @@ def OneToOneField(
 
 @overload
 def OneToOneField(
-    model_name: str,
+    model_name: type[Model] | Literal["self"] | str,
     related_name: str | None | Literal[False] = None,
     on_delete: OnDelete = CASCADE,
     db_constraint: bool = True,
@@ -441,7 +455,7 @@ def OneToOneField(
 
 
 def OneToOneField(
-    model_name: str,
+    model_name: type[Model] | Literal["self"] | str,
     related_name: str | None | Literal[False] = None,
     on_delete: OnDelete = CASCADE,
     db_constraint: bool = True,
@@ -494,7 +508,7 @@ def OneToOneField(
 
 @overload
 def ForeignKeyField(
-    model_name: str,
+    model_name: type[Model] | Literal["self"] | str,
     related_name: str | None | Literal[False] = None,
     on_delete: OnDelete = CASCADE,
     db_constraint: bool = True,
@@ -506,7 +520,7 @@ def ForeignKeyField(
 
 @overload
 def ForeignKeyField(
-    model_name: str,
+    model_name: type[Model] | Literal["self"] | str,
     related_name: str | None | Literal[False] = None,
     on_delete: OnDelete = CASCADE,
     db_constraint: bool = True,
@@ -515,8 +529,9 @@ def ForeignKeyField(
 ) -> ForeignKeyRelation[MODEL]: ...
 
 
+# TODO: use `to` to replace `model_name` and remove default value of `on_delete`
 def ForeignKeyField(
-    model_name: str,
+    model_name: type[Model] | Literal["self"] | str,
     related_name: str | None | Literal[False] = None,
     on_delete: OnDelete = CASCADE,
     db_constraint: bool = True,
@@ -568,7 +583,7 @@ def ForeignKeyField(
 
 
 def ManyToManyField(
-    model_name: str,
+    model_name: type[Model] | Literal["self"] | str,
     through: str | None = None,
     forward_key: str | None = None,
     backward_key: str = "",
