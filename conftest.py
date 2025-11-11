@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import functools
 import os
-from typing import Any, Callable
+from typing import Callable
 
 import pytest
 
@@ -21,17 +21,17 @@ def initialize_tests(request):
 
     db_url = os.getenv("TORTOISE_TEST_DB", "sqlite://:memory:")
     initializer(["tests.testmodels"], db_url=db_url)
-    rollback_vars: Callable[[], Any] | None = None
+    rollback_sets: Callable[[], None] | None = None
     if db_url.startswith("mysql") and "storage_engine=MYISAM" in db_url:
         # Fixes "tortoise.exceptions.OperationalError: (1785, 'Statement violates GTID consistency: ...')" for `make test_mysql_myisam`
         from tortoise.contrib.test import _CONNECTIONS, _LOOP
 
         conn = _CONNECTIONS.get("models")
         assert conn is not None
-        run_async = _LOOP.run_until_complete
+        run_coro = _LOOP.run_until_complete
 
         def get_var_value(statement: str) -> str:
-            result = run_async(conn.execute_query(statement))
+            result = run_coro(conn.execute_query(statement))
             return result[1][0]["Value"]
 
         def is_enforce_gtid() -> bool:
@@ -53,7 +53,7 @@ def initialize_tests(request):
                 statement = off_mode + statement
             await conn.execute_script(statement)
 
-        async def set_enforce_gtid_on(switch_mode: bool) -> None:
+        def set_enforce_gtid_on(switch_mode: bool) -> None:
             statement = "SET GLOBAL enforce_gtid_consistency = ON;"
             if switch_mode:
                 statement += """
@@ -61,13 +61,13 @@ def initialize_tests(request):
                 SET GLOBAL gtid_mode = ON_PERMISSIVE;
                 SET GLOBAL gtid_mode = ON;
                 """
-            await conn.execute_script(statement)
+            run_coro(conn.execute_script(statement))
 
         if is_enforce_gtid():
             mode_on = is_gtid_mode_on()
-            run_async(set_enforce_gtid_off(mode_on))
-            rollback_vars = functools.partial(run_async, set_enforce_gtid_on(mode_on))
+            run_coro(set_enforce_gtid_off(mode_on))
+            rollback_sets = functools.partial(set_enforce_gtid_on, mode_on)
 
     request.addfinalizer(finalizer)
-    if rollback_vars is not None:
-        request.addfinalizer(rollback_vars)
+    if rollback_sets is not None:
+        request.addfinalizer(rollback_sets)
