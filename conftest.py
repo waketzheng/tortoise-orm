@@ -10,7 +10,7 @@ from tortoise.contrib.test import finalizer, initializer
 
 
 @pytest.fixture(scope="session", autouse=True)
-def initialize_tests(request):
+def initialize_tests():
     # Reduce the default timeout for psycopg because the tests become very slow otherwise
     try:
         from tortoise.backends.psycopg import PsycopgClient
@@ -31,8 +31,8 @@ def initialize_tests(request):
         run_coro = _LOOP.run_until_complete
 
         def get_var_value(statement: str) -> str:
-            result = run_coro(conn.execute_query(statement))
-            return result[1][0]["Value"]
+            result = run_coro(conn.execute_query_dict(statement))
+            return result[0]["Value"]
 
         def is_enforce_gtid() -> bool:
             statement = "SHOW VARIABLES LIKE 'enforce_gtid_consistency';"
@@ -68,6 +68,9 @@ def initialize_tests(request):
             run_coro(set_enforce_gtid_off(mode_on))
             rollback_sets = functools.partial(set_enforce_gtid_on, mode_on)
 
-    request.addfinalizer(finalizer)
-    if rollback_sets is not None:
-        request.addfinalizer(rollback_sets)
+    try:
+        yield
+    finally:
+        if rollback_sets is not None:
+            rollback_sets()
+        finalizer()
