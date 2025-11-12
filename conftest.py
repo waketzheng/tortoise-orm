@@ -36,6 +36,7 @@ def _switch_gtid_mode() -> Callable[[], None] | None:
             off_mode = """
             SET GLOBAL gtid_mode = ON_PERMISSIVE;
             SET GLOBAL gtid_mode = OFF_PERMISSIVE;
+            SHOW STATUS LIKE 'ONGOING_ANONYMOUS_TRANSACTION_COUNT';
             SET GLOBAL gtid_mode = OFF;
             """
             statement = off_mode + statement
@@ -47,6 +48,7 @@ def _switch_gtid_mode() -> Callable[[], None] | None:
             statement += """
             SET GLOBAL gtid_mode = OFF_PERMISSIVE;
             SET GLOBAL gtid_mode = ON_PERMISSIVE;
+            SHOW STATUS LIKE 'ONGOING_ANONYMOUS_TRANSACTION_COUNT';
             SET GLOBAL gtid_mode = ON;
             """
         await conn.execute_script(statement)
