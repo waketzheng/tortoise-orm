@@ -30,28 +30,31 @@ def _switch_gtid_mode() -> Callable[[], None] | None:
         statement = "SHOW VARIABLES LIKE 'gtid_mode';"
         return (await get_var_value(statement)) == "ON"
 
+    async def execute_oneline_per_time(multi_line_sql: str) -> None:
+        for sql in multi_line_sql.strip().splitlines():
+            await conn.execute_script(sql.strip())
+
     async def set_enforce_gtid_off() -> None:
         statement = "SET GLOBAL enforce_gtid_consistency = OFF;"
         if await is_gtid_mode_on():
             off_mode = """
             SET GLOBAL gtid_mode = ON_PERMISSIVE;
             SET GLOBAL gtid_mode = OFF_PERMISSIVE;
-            SHOW STATUS LIKE 'ONGOING_ANONYMOUS_TRANSACTION_COUNT';
             SET GLOBAL gtid_mode = OFF;
             """
-            statement = off_mode + statement
+            await execute_oneline_per_time(off_mode)
         await conn.execute_script(statement)
 
     async def set_enforce_gtid_on() -> None:
         statement = "SET GLOBAL enforce_gtid_consistency = ON;"
+        await conn.execute_script(statement)
         if not (await is_gtid_mode_on()):
-            statement += """
+            on_mode = """
             SET GLOBAL gtid_mode = OFF_PERMISSIVE;
             SET GLOBAL gtid_mode = ON_PERMISSIVE;
-            SHOW STATUS LIKE 'ONGOING_ANONYMOUS_TRANSACTION_COUNT';
             SET GLOBAL gtid_mode = ON;
             """
-        await conn.execute_script(statement)
+            await execute_oneline_per_time(on_mode)
 
     if run_coro(is_enforce_gtid()):
         run_coro(set_enforce_gtid_off())
