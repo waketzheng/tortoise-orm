@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import functools
 import os
 from typing import Callable
@@ -13,6 +14,7 @@ def _switch_gtid_mode() -> Callable[[], None] | None:
     # SET gtid_mode to be OFF before testings
     # And SET it ON after test before finalizer
     from tortoise.contrib.test import _CONNECTIONS, _LOOP
+    from tortoise.exceptions import OperationalError
 
     conn = _CONNECTIONS.get("models")
     assert conn is not None
@@ -24,41 +26,41 @@ def _switch_gtid_mode() -> Callable[[], None] | None:
 
     async def is_enforce_gtid() -> bool:
         statement = "SHOW VARIABLES LIKE 'enforce_gtid_consistency';"
-        return (await get_var_value(statement)) == "ON"
+        return (await get_var_value(statement)).upper() == "ON"
 
-    async def is_gtid_mode_on() -> bool:
+    async def get_gtid_mode_status() -> str:
         statement = "SHOW VARIABLES LIKE 'gtid_mode';"
-        return (await get_var_value(statement)) == "ON"
+        return await get_var_value(statement)
 
-    async def execute_oneline_per_time(multi_line_sql: str) -> None:
-        for sql in multi_line_sql.strip().splitlines():
-            await conn.execute_script(sql.strip())
-
-    async def set_enforce_gtid_off() -> None:
+    async def set_enforce_gtid_off(mode_on: bool, gtid_mode: str) -> None:
         statement = "SET GLOBAL enforce_gtid_consistency = OFF;"
-        if await is_gtid_mode_on():
-            off_mode = """
-            SET GLOBAL gtid_mode = ON_PERMISSIVE;
-            SET GLOBAL gtid_mode = OFF_PERMISSIVE;
-            SET GLOBAL gtid_mode = OFF;
-            """
-            await execute_oneline_per_time(off_mode)
+        if mode_on:
+            if gtid_mode == "ON":
+                await conn.execute_script("SET GLOBAL gtid_mode = ON_PERMISSIVE;")
+            await conn.execute_script("SET GLOBAL gtid_mode = OFF_PERMISSIVE;")
         await conn.execute_script(statement)
 
-    async def set_enforce_gtid_on() -> None:
+    async def set_enforce_gtid_on(mode_on: bool, origin_gtid_mode: str) -> None:
         statement = "SET GLOBAL enforce_gtid_consistency = ON;"
         await conn.execute_script(statement)
-        if not (await is_gtid_mode_on()):
-            on_mode = """
-            SET GLOBAL gtid_mode = OFF_PERMISSIVE;
-            SET GLOBAL gtid_mode = ON_PERMISSIVE;
-            SET GLOBAL gtid_mode = ON;
-            """
-            await execute_oneline_per_time(on_mode)
+        if mode_on:
+            current_status = (await get_gtid_mode_status()).upper()
+            if current_status == origin_gtid_mode.upper():
+                return
+            with contextlib.suppress(OperationalError):
+                if current_status == "OFF":
+                    await conn.execute_script("SET GLOBAL gtid_mode = OFF_PERMISSIVE;")
+                await conn.execute_script("SET GLOBAL gtid_mode = ON_PERMISSIVE;")
+                if origin_gtid_mode.upper() == "ON":
+                    await conn.execute_script("SET GLOBAL gtid_mode = ON;")
 
     if run_coro(is_enforce_gtid()):
-        run_coro(set_enforce_gtid_off())
-        return functools.partial(run_coro, set_enforce_gtid_on())
+        origin_gtid_mode = run_coro(get_gtid_mode_status())
+        gtid_mode = origin_gtid_mode.upper()
+        mode_on = gtid_mode.startswith("ON")
+        run_coro(set_enforce_gtid_off(mode_on, gtid_mode))
+        if mode_on and not os.getenv("TORTOISE_GTID_KEEP_OFF"):
+            return functools.partial(run_coro, set_enforce_gtid_on(mode_on, origin_gtid_mode))
     return None
 
 
