@@ -1,8 +1,6 @@
 import datetime
 from decimal import Decimal
 
-import pytz
-
 from tests.testmodels import DefaultModel
 from tortoise import connections
 from tortoise.backends.asyncpg import AsyncpgDBClient
@@ -12,6 +10,7 @@ from tortoise.backends.oracle import OracleClient
 from tortoise.backends.psycopg import PsycopgClient
 from tortoise.backends.sqlite import SqliteClient
 from tortoise.contrib import test
+from tortoise.timezone import UTC
 
 
 class TestDefault(test.TestCase):
@@ -45,5 +44,5 @@ class TestDefault(test.TestCase):
         self.assertEqual(default_model.date_default, datetime.date(year=2020, month=5, day=21))
         self.assertEqual(
             default_model.datetime_default,
-            datetime.datetime(year=2020, month=5, day=20, tzinfo=pytz.utc),
+            datetime.datetime(year=2020, month=5, day=20, tzinfo=UTC),
         )
