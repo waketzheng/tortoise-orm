@@ -77,6 +77,10 @@ jobs:
           DEST_SANIC: examples/sanic
           PYTHONDEVMODE: 1
           PYTEST_ARGS: "-n auto --cov=tortoise --cov-append --cov-branch --tb=native -q"
+      - name: Test not ciso8601
+        run: |
+          uv pip uninstall ciso8601
+          make test_sqlite
       - name: Upload Coverage
         run: |
           pip3 install --upgrade coveralls
