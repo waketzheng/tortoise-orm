@@ -80,7 +80,7 @@ jobs:
       - name: Test not ciso8601
         run: |
           uv pip uninstall ciso8601
-          make test_sqlite
+          uv run --no-sync make test_sqlite
       - name: Upload Coverage
         run: |
           pip3 install --upgrade coveralls
