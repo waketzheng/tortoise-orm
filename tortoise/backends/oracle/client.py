@@ -5,6 +5,7 @@ import functools
 from typing import TYPE_CHECKING, Any, SupportsInt, cast
 
 import pyodbc
+
 try:
     from ciso8601 import parse_datetime
 except ImportError:  # pragma: nocoverage
