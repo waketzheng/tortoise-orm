@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import importlib
 import json
 import logging
@@ -12,6 +11,7 @@ from inspect import isclass
 from types import ModuleType
 from typing import Any, cast
 
+import anyio
 from pypika_tortoise import Query, Table
 
 from tortoise.backends.base.client import BaseDBAsyncClient
@@ -637,11 +637,14 @@ def run_async(coro: Coroutine) -> None:
 
         run_async(do_stuff())
     """
-    loop = asyncio.get_event_loop()
-    try:
-        loop.run_until_complete(coro)
-    finally:
-        loop.run_until_complete(connections.close_all(discard=True))
+
+    async def main() -> None:
+        try:
+            await coro
+        finally:
+            await connections.close_all(discard=True)
+
+    anyio.run(main)
 
 
 __version__ = "0.25.1"
