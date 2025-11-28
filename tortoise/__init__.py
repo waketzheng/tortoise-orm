@@ -11,7 +11,7 @@ from inspect import isclass
 from types import ModuleType
 from typing import Any, cast
 
-import anyio
+from anyio import from_thread
 from pypika_tortoise import Query, Table
 
 from tortoise.backends.base.client import BaseDBAsyncClient
@@ -644,7 +644,8 @@ def run_async(coro: Coroutine) -> None:
         finally:
             await connections.close_all(discard=True)
 
-    anyio.run(main)
+    with from_thread.start_blocking_portal() as portal:
+        portal.call(main)
 
 
 __version__ = "0.25.1"
