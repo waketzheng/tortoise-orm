@@ -328,7 +328,7 @@ class ForeignKeyFieldInstance(RelationalField[MODEL]):
         on_delete: OnDelete = CASCADE,
         **kwargs: Any,
     ) -> None:
-        super().__init__(None, **kwargs)  # type: ignore
+        super().__init__(None, **kwargs)  # type:ignore[arg-type]
         self.validate_model_name(model_name)
         self.model_name = model_name
         self.related_name = related_name
