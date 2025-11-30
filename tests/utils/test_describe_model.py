@@ -32,12 +32,12 @@ from tortoise.fields.relational import (
 
 if sys.version_info >= (3, 14):
 
-    def union_annotation(a: str, b: str) -> str:
-        return f"{a} | {b}"
+    def union_annotation(x: str, y: str) -> str:
+        return f"{x} | {y}"
 else:
 
-    def union_annotation(a: str, b: str) -> str:
-        return f"Union[{a}, {b}]"
+    def union_annotation(x: str, y: str) -> str:
+        return f"Union[{x}, {y}]"
 
 
 UNION_DICT_LIST = union_annotation("dict", "list")
