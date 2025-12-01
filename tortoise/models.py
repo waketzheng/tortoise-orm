@@ -257,6 +257,14 @@ class MetaInfo:
         self.generated_db_fields: tuple[str, ...] = None  # type: ignore
         self._model: type[Model] = None  # type: ignore
         self.table_description: str = getattr(meta, "table_description", "")
+        if hasattr(meta, "verbose_name"):  # For django compatible
+            verbose_name = meta.verbose_name
+            if not self.table_description:
+                self.table_description = verbose_name
+            elif self.table_description != verbose_name:
+                raise ConfigurationError(
+                    "Value conflict in Meta class. Please use either 'table_description' or 'verbose_name', not both of them!"
+                )
         self.pk: Field = None  # type: ignore
         self.db_pk_column: str = ""
         self.db_native_fields: list[tuple[str, str, Field]] = []

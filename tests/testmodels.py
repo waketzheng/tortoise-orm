@@ -246,7 +246,7 @@ class TeamTwo(Model):
     eventtwo_through: fields.ManyToManyRelation[EventTwo]
 
     class Meta:
-        app = "events"
+        app_label = "events"
 
     def __str__(self):
         return self.name
@@ -460,11 +460,11 @@ class UUIDPkSourceModel(Model):
     id = fields.UUIDField(primary_key=True, source_field="a")
 
     class Meta:
-        table = "upsm"
+        db_table = "upsm"
 
 
 class UUIDFkRelatedSourceModel(Model):
-    id = fields.UUIDField(primary_key=True, source_field="b")
+    id = fields.UUIDField(primary_key=True, db_column="b")
     name = fields.CharField(max_length=50, null=True, source_field="c")
     model: fields.ForeignKeyRelation[UUIDPkSourceModel] = fields.ForeignKeyField(
         "models.UUIDPkSourceModel", related_name="children", source_field="d"
@@ -547,7 +547,7 @@ class CommentModel(Model):
     id = fields.IntField(
         primary_key=True, description="Primary key \r*/'`/*\n field for the comments"
     )
-    message = fields.TextField(description="Comment messages entered in the blog post")
+    message = fields.TextField(verbose_name="Comment messages entered in the blog post")
     rating = fields.IntField(description="Upvotes done on the comment")
     escaped_comment_field = fields.TextField(description="This column acts as it's own comment")
     multiline_comment = fields.TextField(description="Some \n comment")
@@ -680,7 +680,7 @@ class StraightFields(Model):
 
     class Meta:
         unique_together = [["chars", "blip"]]
-        table_description = "Straight auto-mapped fields"
+        verbose_name = "Straight auto-mapped fields"
 
 
 class SourceFields(Model):
