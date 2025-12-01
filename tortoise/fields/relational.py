@@ -433,7 +433,7 @@ class ManyToManyFieldInstance(RelationalField[MODEL]):
 
 @overload
 def OneToOneField(
-    model_name: type[Model] | Literal["self"] | str,
+    to: type[Model] | Literal["self"] | str,
     related_name: str | None | Literal[False] = None,
     on_delete: OnDelete = CASCADE,
     db_constraint: bool = True,
@@ -445,7 +445,7 @@ def OneToOneField(
 
 @overload
 def OneToOneField(
-    model_name: type[Model] | Literal["self"] | str,
+    to: type[Model] | Literal["self"] | str,
     related_name: str | None | Literal[False] = None,
     on_delete: OnDelete = CASCADE,
     db_constraint: bool = True,
@@ -455,7 +455,7 @@ def OneToOneField(
 
 
 def OneToOneField(
-    model_name: type[Model] | Literal["self"] | str,
+    to: type[Model] | Literal["self"] | str,
     related_name: str | None | Literal[False] = None,
     on_delete: OnDelete = CASCADE,
     db_constraint: bool = True,
@@ -471,8 +471,8 @@ def OneToOneField(
 
     You must provide the following:
 
-    ``model_name``:
-        The name of the related model in a :samp:`'{app}.{model}'` format.
+    ``to``:
+        The related model or 'self' for recursive or name of the related model in a :samp:`'{app}.{model}'` format.
 
     The following is optional:
 
@@ -502,13 +502,13 @@ def OneToOneField(
     """
 
     return OneToOneFieldInstance(
-        model_name, related_name, on_delete, db_constraint=db_constraint, null=null, **kwargs
+        to, related_name, on_delete, db_constraint=db_constraint, null=null, **kwargs
     )
 
 
 @overload
 def ForeignKeyField(
-    model_name: type[Model] | Literal["self"] | str,
+    to: type[Model] | Literal["self"] | str,
     related_name: str | None | Literal[False] = None,
     on_delete: OnDelete = CASCADE,
     db_constraint: bool = True,
@@ -520,7 +520,7 @@ def ForeignKeyField(
 
 @overload
 def ForeignKeyField(
-    model_name: type[Model] | Literal["self"] | str,
+    to: type[Model] | Literal["self"] | str,
     related_name: str | None | Literal[False] = None,
     on_delete: OnDelete = CASCADE,
     db_constraint: bool = True,
@@ -529,9 +529,8 @@ def ForeignKeyField(
 ) -> ForeignKeyRelation[MODEL]: ...
 
 
-# TODO: use `to` to replace `model_name` and remove default value of `on_delete`
 def ForeignKeyField(
-    model_name: type[Model] | Literal["self"] | str,
+    to: type[Model] | Literal["self"] | str,
     related_name: str | None | Literal[False] = None,
     on_delete: OnDelete = CASCADE,
     db_constraint: bool = True,
@@ -547,8 +546,8 @@ def ForeignKeyField(
 
     You must provide the following:
 
-    ``model_name``:
-        The name of the related model in a :samp:`'{app}.{model}'` format.
+    ``to``:
+        The related model or 'self' for recursive or name of the related model in a :samp:`'{app}.{model}'` format.
 
     The following is optional:
 
@@ -578,12 +577,12 @@ def ForeignKeyField(
     """
 
     return ForeignKeyFieldInstance(
-        model_name, related_name, on_delete, db_constraint=db_constraint, null=null, **kwargs
+        to, related_name, on_delete, db_constraint=db_constraint, null=null, **kwargs
     )
 
 
 def ManyToManyField(
-    model_name: type[Model] | Literal["self"] | str,
+    to: type[Model] | Literal["self"] | str,
     through: str | None = None,
     forward_key: str | None = None,
     backward_key: str = "",
@@ -602,8 +601,8 @@ def ManyToManyField(
 
     You must provide the following:
 
-    ``model_name``:
-        The name of the related model in a :samp:`'{app}.{model}'` format.
+    ``to``:
+        The related model or 'self' for recursive or name of the related model in a :samp:`'{app}.{model}'` format.
 
     The following is optional:
 
@@ -641,7 +640,7 @@ def ManyToManyField(
         The default is True. If you want to allow repeat records, set this to False.
     """
     return ManyToManyFieldInstance(  # type: ignore
-        model_name,
+        to,
         through,
         forward_key,
         backward_key,

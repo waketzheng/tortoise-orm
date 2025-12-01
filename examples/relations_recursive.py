@@ -17,12 +17,12 @@ class Employee(Model):
     name = fields.CharField(max_length=50)
 
     manager: fields.ForeignKeyNullableRelation["Employee"] = fields.ForeignKeyField(
-        "models.Employee", related_name="team_members", null=True
+        "self", related_name="team_members", null=True
     )
     team_members: fields.ReverseRelation["Employee"]
 
     talks_to: fields.ManyToManyRelation["Employee"] = fields.ManyToManyField(
-        "models.Employee", related_name="gets_talked_to"
+        "self", related_name="gets_talked_to"
     )
     gets_talked_to: fields.ManyToManyRelation["Employee"]
 

@@ -105,10 +105,10 @@ class Event(Model):
     name = fields.TextField()
     #: What tournaments is a happenin'
     tournament: fields.ForeignKeyRelation[Tournament] = fields.ForeignKeyField(
-        "models.Tournament", related_name="events"
+        to="models.Tournament", related_name="events"
     )
     reporter: fields.ForeignKeyNullableRelation[Reporter] = fields.ForeignKeyField(
-        "models.Reporter", null=True
+        to=Reporter, null=True
     )
     participants: fields.ManyToManyRelation[Team] = fields.ManyToManyField(
         "models.Team",
