@@ -48,6 +48,13 @@ class TestTableNameGenerator(SimpleTestCase):
                     table = "foo"
                     db_table = "not_foo"
 
+        class Foo(Model):
+            class Meta:
+                table = "foo"
+                db_table = "foo"
+
+        assert Foo._meta.db_table == "foo"
+
     async def test_table_description_conflict(self):
         with pytest.raises(ConfigurationError):
 
