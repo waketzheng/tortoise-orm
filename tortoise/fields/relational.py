@@ -2,15 +2,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import AsyncGenerator, Generator, Iterator
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Generic,
-    Literal,
-    Optional,
-    TypeVar,
-    overload,
-)
+from typing import TYPE_CHECKING, Any, Generic, Literal, Optional, TypeVar, overload
 
 from pypika_tortoise import Table
 
