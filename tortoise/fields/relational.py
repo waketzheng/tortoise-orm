@@ -416,7 +416,7 @@ class ManyToManyFieldInstance(RelationalField[MODEL]):
 
     def describe(self, serializable: bool) -> dict:
         desc = super().describe(serializable)
-        desc["model_name"] = self.model_name  # TODO: should model_class -> str? 
+        desc["model_name"] = self.model_name  # TODO: should model_class -> str?
         desc["related_name"] = self.related_name
         desc["forward_key"] = self.forward_key
         desc["backward_key"] = self.backward_key

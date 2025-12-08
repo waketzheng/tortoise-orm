@@ -4091,7 +4091,7 @@ requires-dist = [
     { name = "iso8601", marker = "python_full_version < '4'", specifier = ">=2.1.0,<3.0.0" },
     { name = "orjson", marker = "extra == 'accel'" },
     { name = "psycopg", extras = ["binary", "pool"], marker = "extra == 'psycopg'", specifier = ">=3.0.12,<4.0.0" },
-    { name = "pypika-tortoise", specifier = ">=0.6.1,<1.0.0" },
+    { name = "pypika-tortoise", specifier = ">=0.6.3,<1.0.0" },
     { name = "pytz" },
     { name = "uvloop", marker = "implementation_name == 'cpython' and sys_platform != 'win32' and extra == 'accel'" },
 ]
