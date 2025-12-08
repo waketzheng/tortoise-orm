@@ -402,7 +402,10 @@ class ManyToManyFieldInstance(RelationalField[MODEL]):
             if not isinstance(model_name, str):
                 forward_key = f"{model_name.__name__.lower()}_id"
             elif model_name == "self":
-                forward_key = "self_id"  # TODO: compatible
+                model = self.model.__name__.lower()
+                forward_key = f"from_{model}_id"
+                if not backward_key:  # TODO: it's really need?
+                    backward_key = f"to_{model}_id"
             else:
                 forward_key = f"{model_name.split('.')[1].lower()}_id"
         self.forward_key: str = forward_key
@@ -413,7 +416,7 @@ class ManyToManyFieldInstance(RelationalField[MODEL]):
 
     def describe(self, serializable: bool) -> dict:
         desc = super().describe(serializable)
-        desc["model_name"] = self.model_name
+        desc["model_name"] = self.model_name  # TODO: should model_class -> str? 
         desc["related_name"] = self.related_name
         desc["forward_key"] = self.forward_key
         desc["backward_key"] = self.backward_key
