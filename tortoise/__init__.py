@@ -251,6 +251,9 @@ class Tortoise:
                         backward_key = f"{model._meta.db_table}_id"
                         if backward_key == m2m_object.forward_key:
                             backward_key = f"{model._meta.db_table}_rel_id"
+                        elif m2m_object.forward_key == "self_id":
+                            backward_key = "to_" + backward_key
+                            m2m_object.forward_key == "from_" + m2m_object.forward_key
                         m2m_object.backward_key = backward_key
 
                     reference = m2m_object.model_name
@@ -264,34 +267,34 @@ class Tortoise:
 
                     m2m_object.related_model = related_model
 
-                    if not (backward_relation_name := m2m_object.related_name):
-                        backward_relation_name = m2m_object.related_name = (
-                            f"{model._meta.db_table}s"
-                        )
-                    if backward_relation_name in related_model._meta.fields:
-                        raise ConfigurationError(
-                            f'backward relation "{backward_relation_name}" duplicates in'
-                            f" model {related_model_name}"
-                        )
-
                     if not m2m_object.through:
                         related_model_table_name = (
                             related_model._meta.db_table or related_model.__name__.lower()
                         )
                         m2m_object.through = f"{model._meta.db_table}_{related_model_table_name}"
 
-                    m2m_relation = ManyToManyFieldInstance(
-                        f"{app_name}.{model_name}",
-                        m2m_object.through,
-                        forward_key=m2m_object.backward_key,
-                        backward_key=m2m_object.forward_key,
-                        related_name=field,
-                        field_type=model,
-                        description=m2m_object.description,
-                    )
-                    m2m_relation._generated = True
                     model._meta.filters.update(get_m2m_filters(field, m2m_object))
-                    related_model._meta.add_field(backward_relation_name, m2m_relation)
+                    if not m2m_object.symmetrical:
+                        if not (backward_relation_name := m2m_object.related_name):
+                            backward_relation_name = m2m_object.related_name = (
+                                f"{model._meta.db_table}s"
+                            )
+                        if backward_relation_name in related_model._meta.fields:
+                            raise ConfigurationError(
+                                f'backward relation "{backward_relation_name}" duplicates in'
+                                f" model {related_model_name}"
+                            )
+                        m2m_relation = ManyToManyFieldInstance(
+                            f"{app_name}.{model_name}",
+                            m2m_object.through,
+                            forward_key=m2m_object.backward_key,
+                            backward_key=m2m_object.forward_key,
+                            related_name=field,
+                            field_type=model,
+                            description=m2m_object.description,
+                        )
+                        m2m_relation._generated = True
+                        related_model._meta.add_field(backward_relation_name, m2m_relation)
 
     @classmethod
     def _discover_models(cls, models_path: ModuleType | str, app_label: str) -> list[type[Model]]:

@@ -383,6 +383,7 @@ class ManyToManyFieldInstance(RelationalField[MODEL]):
         on_delete: OnDelete = CASCADE,
         field_type: type[MODEL] = None,  # type: ignore
         unique: bool = True,
+        symmetrical: bool = True,
         **kwargs: Any,
     ) -> None:
         # TODO: rename through to through_table
@@ -402,10 +403,7 @@ class ManyToManyFieldInstance(RelationalField[MODEL]):
             if not isinstance(model_name, str):
                 forward_key = f"{model_name.__name__.lower()}_id"
             elif model_name == "self":
-                model = self.model.__name__.lower()
-                forward_key = f"from_{model}_id"
-                if not backward_key:  # TODO: it's really need?
-                    backward_key = f"to_{model}_id"
+                forward_key = "self_id"
             else:
                 forward_key = f"{model_name.split('.')[1].lower()}_id"
         self.forward_key: str = forward_key
@@ -413,6 +411,7 @@ class ManyToManyFieldInstance(RelationalField[MODEL]):
         self.through: str = through  # type: ignore
         self._generated: bool = False
         self.on_delete = on_delete
+        self.symmetrical = symmetrical
 
     def describe(self, serializable: bool) -> dict:
         desc = super().describe(serializable)
@@ -585,6 +584,7 @@ def ManyToManyField(
     on_delete: OnDelete = CASCADE,
     db_constraint: bool = True,
     unique: bool = True,
+    symmetrical: bool | None = None,
     **kwargs: Any,
 ) -> ManyToManyRelation[Any]:
     """
@@ -633,7 +633,12 @@ def ManyToManyField(
     ``unique``:
         Controls whether or not a unique index should be created in the database to speed up select queries.
         The default is True. If you want to allow repeat records, set this to False.
+
+    ``symmetrical``:
+        Only used in the definition of ManyToManyFields on self. See more at examples/relations_recursive_self.py
     """
+    if symmetrical is None:
+        symmetrical = to == "self"
     return ManyToManyFieldInstance(  # type: ignore
         to,
         through,
@@ -643,6 +648,7 @@ def ManyToManyField(
         on_delete=on_delete,
         db_constraint=db_constraint,
         unique=unique,
+        symmetrical=symmetrical,
         **kwargs,
     )
 
