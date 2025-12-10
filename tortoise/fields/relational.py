@@ -305,10 +305,8 @@ class RelationalField(Field[MODEL]):
                 model_class._meta
             except AttributeError:
                 raise ConfigurationError(
-                    "model_name must be string or tortoise.models.Model's subclass"
+                    f"{cls.__name__}({model_name!r}) is invalid. model_name must be string or type[tortoise.models.Model]"
                 ) from None
-        elif model_name == "self":
-            ...
         elif len(model_name.split(".")) != 2:
             field_type = cls.__name__.replace("Instance", "")
             raise ConfigurationError(f'{field_type} accepts model name in format "app.Model"')
@@ -317,7 +315,7 @@ class RelationalField(Field[MODEL]):
 class ForeignKeyFieldInstance(RelationalField[MODEL]):
     def __init__(
         self,
-        model_name: type[Model] | Literal["self"] | str,
+        model_name: type[Model] | str,
         related_name: str | None | Literal[False] = None,
         on_delete: OnDelete = CASCADE,
         **kwargs: Any,
@@ -360,7 +358,7 @@ class BackwardFKRelation(RelationalField[MODEL]):
 class OneToOneFieldInstance(ForeignKeyFieldInstance[MODEL]):
     def __init__(
         self,
-        model_name: type[Model] | Literal["self"] | str,
+        model_name: type[Model] | str,
         related_name: str | None | Literal[False] = None,
         on_delete: OnDelete = CASCADE,
         **kwargs: Any,
@@ -377,7 +375,7 @@ class ManyToManyFieldInstance(RelationalField[MODEL]):
 
     def __init__(
         self,
-        model_name: type[Model] | Literal["self"] | str,
+        model_name: type[Model] | str,
         through: str | None = None,
         forward_key: str | None = None,
         backward_key: str = "",
@@ -403,8 +401,6 @@ class ManyToManyFieldInstance(RelationalField[MODEL]):
         if not forward_key:
             if not isinstance(model_name, str):
                 forward_key = f"{model_name.__name__.lower()}_id"
-            elif model_name == "self":
-                forward_key = "self_id"  # TODO: compatible
             else:
                 forward_key = f"{model_name.split('.')[1].lower()}_id"
         self.forward_key: str = forward_key
@@ -427,7 +423,7 @@ class ManyToManyFieldInstance(RelationalField[MODEL]):
 
 @overload
 def OneToOneField(
-    to: type[Model] | Literal["self"] | str,
+    to: type[Model] | str,
     related_name: str | None | Literal[False] = None,
     on_delete: OnDelete = CASCADE,
     db_constraint: bool = True,
@@ -439,7 +435,7 @@ def OneToOneField(
 
 @overload
 def OneToOneField(
-    to: type[Model] | Literal["self"] | str,
+    to: type[Model] | str,
     related_name: str | None | Literal[False] = None,
     on_delete: OnDelete = CASCADE,
     db_constraint: bool = True,
@@ -449,7 +445,7 @@ def OneToOneField(
 
 
 def OneToOneField(
-    to: type[Model] | Literal["self"] | str,
+    to: type[Model] | str,
     related_name: str | None | Literal[False] = None,
     on_delete: OnDelete = CASCADE,
     db_constraint: bool = True,
@@ -466,7 +462,7 @@ def OneToOneField(
     You must provide the following:
 
     ``to``:
-        The related model or 'self' for recursive or name of the related model in a :samp:`'{app}.{model}'` format.
+        The related model or name of the related model in a :samp:`'{app}.{model}'` format.
 
     The following is optional:
 
@@ -502,7 +498,7 @@ def OneToOneField(
 
 @overload
 def ForeignKeyField(
-    to: type[Model] | Literal["self"] | str,
+    to: type[Model] | str,
     related_name: str | None | Literal[False] = None,
     on_delete: OnDelete = CASCADE,
     db_constraint: bool = True,
@@ -514,7 +510,7 @@ def ForeignKeyField(
 
 @overload
 def ForeignKeyField(
-    to: type[Model] | Literal["self"] | str,
+    to: type[Model] | str,
     related_name: str | None | Literal[False] = None,
     on_delete: OnDelete = CASCADE,
     db_constraint: bool = True,
@@ -524,7 +520,7 @@ def ForeignKeyField(
 
 
 def ForeignKeyField(
-    to: type[Model] | Literal["self"] | str,
+    to: type[Model] | str,
     related_name: str | None | Literal[False] = None,
     on_delete: OnDelete = CASCADE,
     db_constraint: bool = True,
@@ -541,7 +537,7 @@ def ForeignKeyField(
     You must provide the following:
 
     ``to``:
-        The related model or 'self' for recursive or name of the related model in a :samp:`'{app}.{model}'` format.
+        The related model or name of the related model in a :samp:`'{app}.{model}'` format.
 
     The following is optional:
 
@@ -576,7 +572,7 @@ def ForeignKeyField(
 
 
 def ManyToManyField(
-    to: type[Model] | Literal["self"] | str,
+    to: type[Model] | str,
     through: str | None = None,
     forward_key: str | None = None,
     backward_key: str = "",
@@ -596,7 +592,7 @@ def ManyToManyField(
     You must provide the following:
 
     ``to``:
-        The related model or 'self' for recursive or name of the related model in a :samp:`'{app}.{model}'` format.
+        The related model or name of the related model in a :samp:`'{app}.{model}'` format.
 
     The following is optional:
 
