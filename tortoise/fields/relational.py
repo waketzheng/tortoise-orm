@@ -301,10 +301,12 @@ class RelationalField(Field[MODEL]):
     def validate_model_name(cls, model_name: str | type[Model]) -> None:
         if not isinstance(model_name, str):
             model_class: type[Model] = model_name
-            if not hasattr(model_class, "_meta"):
+            try:
+                model_class._meta
+            except AttributeError:
                 raise ConfigurationError(
                     "model_name must be string or tortoise.models.Model's subclass"
-                )
+                ) from None
         elif model_name == "self":
             ...
         elif len(model_name.split(".")) != 2:
