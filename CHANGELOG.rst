@@ -13,6 +13,14 @@ Changelog
 0.26.0 (unreleased)
 -------------------
 
+Changed
+^^^^^
+- Rename position argument for ForeignKey/OneToOne/ManyToMany field `model_name` -> `to` (#2027)
+
+Added
+^^^^^
+- feat: foreignkey to model type (#2027)
+
 0.25
 ====
 

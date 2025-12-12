@@ -3,7 +3,9 @@ This example demonstrates how to use the global table name generator to automati
 generate snake_case table names for all models, and how explicit table names take precedence.
 """
 
-from tortoise import Tortoise, fields, run_async
+import anyio
+
+from tortoise import Tortoise, fields
 from tortoise.models import Model
 
 
@@ -26,7 +28,7 @@ class BlogPost(Model):
     id = fields.IntField(primary_key=True)
     title = fields.TextField()
     author: fields.ForeignKeyRelation[UserProfile] = fields.ForeignKeyField(
-        "models.UserProfile", related_name="posts"
+        UserProfile, related_name="posts"
     )
 
     class Meta:
@@ -53,4 +55,4 @@ async def run():
 
 
 if __name__ == "__main__":
-    run_async(run())
+    anyio.run(run)
