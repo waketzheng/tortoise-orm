@@ -14,7 +14,7 @@ Changelog
 -------------------
 Fixed
 ^^^^^
-- Fix exception when creating aiosqlite connections on aiosqlite==1.22.0 (#2035)
+- Fix exception when creating aiosqlite connections on aiosqlite==0.22.0 (#2035)
 
 0.25
 ====
