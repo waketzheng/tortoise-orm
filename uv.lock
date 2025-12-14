@@ -190,14 +190,11 @@ wheels = [
 
 [[package]]
 name = "aiosqlite"
-version = "0.21.0"
+version = "0.22.0"
 source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/13/7d/8bca2bf9a247c2c5dfeec1d7a5f40db6518f88d314b8bca9da29670d2671/aiosqlite-0.21.0.tar.gz", hash = "sha256:131bb8056daa3bc875608c631c678cda73922a2d4ba8aec373b19f18c17e7aa3" }
+sdist = { url = "https://files.pythonhosted.org/packages/3a/0d/449c024bdabd0678ae07d804e60ed3b9786facd3add66f51eee67a0fccea/aiosqlite-0.22.0.tar.gz", hash = "sha256:7e9e52d72b319fcdeac727668975056c49720c995176dc57370935e5ba162bb9" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f5/10/6c25ed6de94c49f88a91fa5018cb4c0f3625f31d5be9f771ebe5cc7cd506/aiosqlite-0.21.0-py3-none-any.whl", hash = "sha256:2549cf4057f95f53dcba16f2b64e8e2791d7e1adedb13197dd8ed77bb226d7d0" },
+    { url = "https://files.pythonhosted.org/packages/ef/39/b2181148075272edfbbd6d87e6cd78cc71dca243446fa3b381fd4116950b/aiosqlite-0.22.0-py3-none-any.whl", hash = "sha256:96007fac2ce70eda3ca1bba7a3008c435258a592b8fbf2ee3eeaa36d33971a09" },
 ]
 
 [[package]]
@@ -4004,10 +4001,11 @@ wheels = [
 name = "tortoise-orm"
 source = { editable = "." }
 dependencies = [
-    { name = "aiosqlite" },
+    { name = "anyio" },
     { name = "iso8601", marker = "python_full_version < '4'" },
     { name = "pypika-tortoise" },
     { name = "pytz" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 
 [package.optional-dependencies]
@@ -4031,6 +4029,9 @@ asyncpg = [
 psycopg = [
     { name = "psycopg", version = "3.2.13", source = { registry = "https://pypi.org/simple" }, extra = ["binary", "pool"], marker = "python_full_version < '3.10'" },
     { name = "psycopg", version = "3.3.2", source = { registry = "https://pypi.org/simple" }, extra = ["binary", "pool"], marker = "python_full_version >= '3.10'" },
+]
+sqlite = [
+    { name = "aiosqlite" },
 ]
 
 [package.dev-dependencies]
@@ -4083,7 +4084,8 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "aiomysql", marker = "extra == 'aiomysql'" },
-    { name = "aiosqlite", specifier = ">=0.16.0,<1.0.0" },
+    { name = "aiosqlite", marker = "extra == 'sqlite'", specifier = ">=0.22.0,<1.0.0" },
+    { name = "anyio", specifier = ">=4.12.0,<5.0.0" },
     { name = "asyncmy", marker = "python_full_version < '4' and extra == 'asyncmy'", specifier = ">=0.2.8,<1.0.0" },
     { name = "asyncodbc", marker = "python_full_version < '4' and extra == 'asyncodbc'", specifier = ">=0.1.1,<1.0.0" },
     { name = "asyncpg", marker = "extra == 'asyncpg'" },
@@ -4093,9 +4095,10 @@ requires-dist = [
     { name = "psycopg", extras = ["binary", "pool"], marker = "extra == 'psycopg'", specifier = ">=3.0.12,<4.0.0" },
     { name = "pypika-tortoise", specifier = ">=0.6.3,<1.0.0" },
     { name = "pytz" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'", specifier = ">=4.15.0" },
     { name = "uvloop", marker = "implementation_name == 'cpython' and sys_platform != 'win32' and extra == 'accel'" },
 ]
-provides-extras = ["accel", "asyncpg", "aiomysql", "asyncmy", "psycopg", "asyncodbc"]
+provides-extras = ["accel", "sqlite", "asyncpg", "aiomysql", "asyncmy", "psycopg", "asyncodbc"]
 
 [package.metadata.requires-dev]
 contrib = [

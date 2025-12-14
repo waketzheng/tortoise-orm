@@ -10,7 +10,8 @@ requires-python = ">=3.9"
 dependencies = [
     "pypika-tortoise (>=0.6.3,<1.0.0)",
     "iso8601 (>=2.1.0,<3.0.0); python_version < '4.0'",
-    "aiosqlite (>=0.16.0,<1.0.0)",
+    "anyio (>=4.12.0,<5.0.0)",
+    "typing-extensions>=4.15.0; python_version < '3.11'",
     "pytz",
 ]
 classifiers = [
@@ -41,6 +42,7 @@ accel = [
     "uvloop; sys_platform != 'win32' and implementation_name == 'cpython'",
     "orjson",
 ]
+sqlite = ["aiosqlite (>=0.22.0,<1.0.0)"]
 asyncpg = ["asyncpg"]
 aiomysql = ["aiomysql"]
 asyncmy = ["asyncmy (>=0.2.8,<1.0.0); python_version < '4.0'"]

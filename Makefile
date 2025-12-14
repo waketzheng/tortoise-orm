@@ -24,10 +24,10 @@ up:
 	uv lock --upgrade
 
 deps:
-	uv sync --frozen --all-groups --extra asyncpg --extra accel --extra psycopg --extra asyncodbc --extra aiomysql $(options)
+	uv sync --frozen --all-groups --extra sqlite --extra asyncpg --extra accel --extra psycopg --extra asyncodbc --extra aiomysql $(options)
 
 deps_with_asyncmy:
-	uv sync --frozen --all-groups --extra asyncpg --extra accel --extra psycopg --extra asyncodbc --extra asyncmy $(options)
+	uv sync --frozen --all-groups --extra sqlite --extra asyncpg --extra accel --extra psycopg --extra asyncodbc --extra asyncmy $(options)
 
 check: build _check
 _check:
@@ -98,8 +98,7 @@ docs: deps
 	uv run --frozen sphinx-build -M html docs build
 
 build: deps
-	rm -fR dist/
-	uv build
+	uv build --clear
 
 publish: deps _build
 	uv run --frozen twine upload dist/*

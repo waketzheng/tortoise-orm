@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import operator
+import sys
 from collections.abc import Callable, Iterable, Sequence
 from functools import partial
 from typing import TYPE_CHECKING, Any, TypedDict
@@ -16,7 +17,11 @@ from pypika_tortoise.terms import (
     Term,
     ValueWrapper,
 )
-from typing_extensions import NotRequired
+
+if sys.version_info >= (3, 11):
+    from typing import NotRequired
+else:
+    from typing_extensions import NotRequired
 
 from tortoise.contrib.postgres.fields import ArrayField
 from tortoise.fields import Field, JSONField
