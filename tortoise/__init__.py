@@ -644,7 +644,7 @@ def run_async(coro: Coroutine) -> None:
         loop.run_until_complete(connections.close_all(discard=True))
 
 
-__version__ = "0.25.1"
+__version__ = "0.25.2"
 
 __all__ = [
     "Model",
