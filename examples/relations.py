@@ -27,8 +27,8 @@ class Event(Model):
     tournament: fields.ForeignKeyRelation[Tournament] = fields.ForeignKeyField(
         Tournament, related_name="events"
     )
+    # class Team does not defined before Event, so we have to use '{app}.{model_class}'
     participants: fields.ManyToManyRelation["Team"] = fields.ManyToManyField(
-        # class Team does not defined before Event, so we have to use '{app}.{model_class}'
         "models.Team", related_name="events", through="event_team"
     )
 
