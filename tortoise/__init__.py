@@ -157,8 +157,6 @@ class Tortoise:
             reference = fk_object.model_name
             if not isinstance(reference, str):
                 related_model: type[Model] = reference
-            elif reference == "self":
-                related_model = model
             else:
                 related_app_name, related_model_name = split_reference(reference)
                 related_model = get_related_model(related_app_name, related_model_name)
@@ -259,8 +257,6 @@ class Tortoise:
                     reference = m2m_object.model_name
                     if not isinstance(reference, str):
                         related_model: type[Model] = reference
-                    elif reference == "self":
-                        related_model = model
                     else:
                         related_app_name, related_model_name = split_reference(reference)
                         related_model = get_related_model(related_app_name, related_model_name)
@@ -662,7 +658,7 @@ def run_async(coro: Coroutine) -> None:
         portal.call(main)
 
 
-__version__ = "0.25.1"
+__version__ = "0.25.2"
 
 __all__ = [
     "Model",
