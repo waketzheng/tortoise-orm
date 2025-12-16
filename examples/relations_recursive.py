@@ -17,14 +17,19 @@ class Employee(Model):
     name = fields.CharField(max_length=50)
 
     manager: fields.ForeignKeyNullableRelation["Employee"] = fields.ForeignKeyField(
-        "models.Employee", related_name="team_members", null=True
+        "self", related_name="team_members", null=True
     )
     team_members: fields.ReverseRelation["Employee"]
 
     talks_to: fields.ManyToManyRelation["Employee"] = fields.ManyToManyField(
-        "models.Employee", related_name="gets_talked_to"
+        "self", related_name="gets_talked_to", symmetrical=False
     )
     gets_talked_to: fields.ManyToManyRelation["Employee"]
+
+    friends: fields.ManyToManyRelation["Employee"] = fields.ManyToManyField("self")
+
+    async def is_friend_of(self, other: "Employee") -> bool:
+        return await other.friends.filter(pk=self.pk).exists()
 
     def __str__(self):
         return self.name
@@ -96,6 +101,15 @@ async def run():
     print(await loose2.full_hierarchy__fetch_related())
     print(await root2.full_hierarchy__async_for())
     print(await root2.full_hierarchy__fetch_related())
+
+    # symmetrical
+    A = await Employee.create(name="A")
+    B = await Employee.create(name="B")
+    await B.friends.add(A)
+    if await A.is_friend_of(B):
+        print(A, "is friend of", B)
+    if await B.is_friend_of(A):
+        print(B, "is friend of", A)
 
 
 if __name__ == "__main__":
