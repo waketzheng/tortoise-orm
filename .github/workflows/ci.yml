@@ -87,6 +87,7 @@ jobs:
       - name: Run Tests for mysql
         run: make test_mysql
       - name: Run Tests for mssql
+        run: make test_mssql
       - name: Run Tests for mysql asyncmy
         run: make test_mysql_asyncmy
       - name: Upload Coverage
