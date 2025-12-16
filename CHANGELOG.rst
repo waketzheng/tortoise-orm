@@ -20,9 +20,6 @@ Changed
 ^^^^^
 - feat: foreignkey to model type (#2027)
 
-Added
-^^^^^
-
 0.25
 ====
 
