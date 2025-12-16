@@ -12,6 +12,9 @@ Changelog
 
 0.26.0 (unreleased)
 -------------------
+Fixed
+^^^^^
+- Fix exception when creating aiosqlite connections on aiosqlite==0.22.0 (#2035)
 
 0.25
 ====
