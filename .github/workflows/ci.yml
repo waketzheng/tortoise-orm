@@ -80,14 +80,14 @@ jobs:
         run: make test_sqlite
       - name: Run Tests for postgres
         run: make test_postgres_asyncpg
-      - name: Run Tests for postgres psycopg
-        run: make test_postgres_psycopg
-      - name: Run Tests for mysql myisam
-        run: make test_mysql_myisam
       - name: Run Tests for mysql
         run: make test_mysql
       - name: Run Tests for mssql
         run: make test_mssql
+      - name: Run Tests for postgres psycopg
+        run: make test_postgres_psycopg
+      - name: Run Tests for mysql myisam
+        run: make test_mysql_myisam
       - name: Run Tests for mysql asyncmy
         run: make test_mysql_asyncmy
       - name: Upload Coverage
@@ -103,8 +103,6 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
       - name: Finished
         run: uvx coveralls --finish
         env:
