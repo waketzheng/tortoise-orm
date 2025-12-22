@@ -1,7 +1,13 @@
-from enum import Enum, IntEnum
+import sys
+from enum import IntEnum
 
 from tortoise import Tortoise, fields, run_async
 from tortoise.models import Model
+
+if sys.version_info >= (3, 11):
+    from enum import StrEnum
+else:
+    from tortoise.fields.base import StrEnum
 
 
 class Service(IntEnum):
@@ -10,7 +16,7 @@ class Service(IntEnum):
     system_administration = 3
 
 
-class Currency(str, Enum):
+class Currency(StrEnum):
     HUF = "HUF"
     EUR = "EUR"
     USD = "USD"
