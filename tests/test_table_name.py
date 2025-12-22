@@ -38,4 +38,5 @@ class TestTableNameGenerator(SimpleTestCase):
         self.assertEqual(CustomTable._meta.db_table, "my_custom_table")
 
     async def _tearDownDB(self) -> None:
+        # Explicitly close aiosqlite connection to fix ResourceWarning
         await Tortoise.get_connection("default").close()

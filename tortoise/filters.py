@@ -18,14 +18,14 @@ from pypika_tortoise.terms import (
     ValueWrapper,
 )
 
-if sys.version_info >= (3, 11):
-    from typing import NotRequired
-else:
-    from typing_extensions import NotRequired
-
 from tortoise.contrib.postgres.fields import ArrayField
 from tortoise.fields import Field, JSONField
 from tortoise.fields.relational import BackwardFKRelation, ManyToManyFieldInstance
+
+if sys.version_info >= (3, 11):  # pragma：nocoverage
+    from typing import NotRequired
+else:
+    from typing_extensions import NotRequired
 
 if TYPE_CHECKING:  # pragma: nocoverage
     from tortoise.models import Model
