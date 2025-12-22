@@ -2,9 +2,7 @@
 This example demonstrates most basic operations with single model
 """
 
-from tortoise import fields, run_async
-from tortoise.contrib.test import init_memory_sqlite
-from tortoise.models import Model
+from tortoise import Model, fields
 
 
 class Event(Model):
@@ -15,11 +13,10 @@ class Event(Model):
     class Meta:
         table = "event"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
-@init_memory_sqlite
 async def run() -> None:
     event = await Event.create(name="Test")
     await Event.filter(id=event.id).update(name="Updated name")
@@ -32,7 +29,22 @@ async def run() -> None:
     # >>> [1, 2]
     print(await Event.all().values("id", "name"))
     # >>> [{'id': 1, 'name': 'Updated name'}, {'id': 2, 'name': 'Test 2'}]
+    print(repr(await Event.first()))
+    # >>> <Event: 1>
+    print(repr(await Event.last()))
+    # >>> <Event: 2>
+
+
+def main() -> None:
+    from tortoise import run_async
+    from tortoise.contrib.test import init_memory_sqlite
+
+    def run_in_memory_sqlite(func) -> None:
+        f = init_memory_sqlite(func)
+        run_async(f())
+
+    run_in_memory_sqlite(run)
 
 
 if __name__ == "__main__":
-    run_async(run())
+    main()
