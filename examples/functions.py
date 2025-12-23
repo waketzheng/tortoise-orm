@@ -11,7 +11,7 @@ class Tournament(Model):
 
     events: fields.ReverseRelation["Event"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -25,7 +25,9 @@ class Event(Model):
         "models.Team", related_name="events", through="event_team"
     )
 
-    def __str__(self):
+    tournament_id: int
+
+    def __str__(self) -> str:
         return self.name
 
 
@@ -35,11 +37,11 @@ class Team(Model):
 
     events: fields.ManyToManyRelation[Event]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
-async def run():
+async def run() -> None:
     await Tortoise.init(db_url="sqlite://:memory:", modules={"models": ["__main__"]})
     await Tortoise.generate_schemas()
     tournament = await Tournament.create(name="New Tournament", desc="great")
