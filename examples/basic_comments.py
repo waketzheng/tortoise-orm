@@ -18,11 +18,11 @@ class Event(Model):
         table = "event"
         table_description = "This table contains a list of all the example events"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
-async def run():
+async def run() -> None:
     await Tortoise.init(db_url="sqlite://:memory:", modules={"models": ["__main__"]})
     await Tortoise.generate_schemas()
 
