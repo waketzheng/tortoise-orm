@@ -4,7 +4,6 @@ import datetime
 from typing import TYPE_CHECKING, Any, SupportsInt, cast
 
 import pyodbc
-import pytz
 from pypika_tortoise import OracleQuery
 
 from tortoise.backends.base.client import (
@@ -22,6 +21,7 @@ from tortoise.backends.odbc.client import (
 from tortoise.backends.oracle.executor import OracleExecutor
 from tortoise.backends.oracle.schema_generator import OracleSchemaGenerator
 from tortoise.fields.data import parse_datetime
+from tortoise.timezone import UTC
 
 if TYPE_CHECKING:  # pragma: nocoverage
     import asyncodbc  # pylint: disable=W0611
@@ -95,7 +95,7 @@ class OraclePoolConnectionWrapper(PoolConnectionWrapper):
         try:
             return parse_datetime(value.decode()).date()
         except ValueError:
-            return parse_datetime(value.decode()[:-32]).astimezone(tz=pytz.utc)
+            return parse_datetime(value.decode()[:-32]).astimezone(tz=UTC)
 
     async def __aenter__(self) -> asyncodbc.Connection:
         connection = await super().__aenter__()

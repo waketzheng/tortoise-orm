@@ -4,15 +4,13 @@ from datetime import timezone as dt_timezone
 from time import sleep
 from unittest.mock import patch
 
-import pytz
-
 from tests import testmodels
 from tortoise import Model, fields, timezone
 from tortoise.contrib import test
 from tortoise.contrib.test.condition import NotIn
 from tortoise.exceptions import ConfigurationError, IntegrityError
 from tortoise.expressions import F
-from tortoise.timezone import get_default_timezone
+from tortoise.timezone import get_default_timezone, parse_timezone
 
 
 class TestEmpty(test.TestCase):
@@ -125,7 +123,7 @@ class TestDatetimeFields(TestEmpty):
         old_tz = os.environ["TIMEZONE"]
         tz = "Asia/Shanghai"
         os.environ["TIMEZONE"] = tz
-        now = datetime.now(pytz.timezone(tz))
+        now = datetime.now(parse_timezone(tz))
         obj = await self.model.create(datetime=now)
         self.assertEqual(obj.datetime.tzinfo.zone, tz)
 
@@ -142,7 +140,7 @@ class TestDatetimeFields(TestEmpty):
         os.environ["TIMEZONE"] = tz
         os.environ["USE_TZ"] = "True"
 
-        now = datetime.now(pytz.timezone(tz))
+        now = datetime.now(parse_timezone(tz))
         obj = await self.model.create(datetime=now)
         self.assertEqual(obj.datetime.tzinfo.zone, tz)
         obj_get = await self.model.get(pk=obj.pk)

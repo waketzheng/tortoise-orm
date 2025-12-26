@@ -4,7 +4,6 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Any
 
-import pytz
 from pypika_tortoise.terms import Function as PupikaFunction
 
 from tests.testmodels import (
@@ -26,6 +25,7 @@ from tortoise.contrib import test
 from tortoise.contrib.test.condition import In, NotEQ
 from tortoise.expressions import Case, F, Q, Subquery, When
 from tortoise.functions import Function, Upper
+from tortoise.timezone import UTC
 
 
 class TestUpdate(test.TestCase):
@@ -49,11 +49,11 @@ class TestUpdate(test.TestCase):
 
     async def test_bulk_update_datetime(self):
         objs = [
-            await DatetimeFields.create(datetime=datetime(2021, 1, 1, tzinfo=pytz.utc)),
-            await DatetimeFields.create(datetime=datetime(2021, 1, 1, tzinfo=pytz.utc)),
+            await DatetimeFields.create(datetime=datetime(2021, 1, 1, tzinfo=UTC)),
+            await DatetimeFields.create(datetime=datetime(2021, 1, 1, tzinfo=UTC)),
         ]
-        t0 = datetime(2021, 1, 2, tzinfo=pytz.utc)
-        t1 = datetime(2021, 1, 3, tzinfo=pytz.utc)
+        t0 = datetime(2021, 1, 2, tzinfo=UTC)
+        t1 = datetime(2021, 1, 3, tzinfo=UTC)
         objs[0].datetime = t0
         objs[1].datetime = t1
         rows_affected = await DatetimeFields.bulk_update(objs, fields=["datetime"])
