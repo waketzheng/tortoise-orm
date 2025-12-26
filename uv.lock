@@ -3983,7 +3983,6 @@ wheels = [
 name = "tortoise-orm"
 source = { editable = "." }
 dependencies = [
-    { name = "aiosqlite" },
     { name = "anyio" },
     { name = "pypika-tortoise" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'" },
@@ -4010,6 +4009,9 @@ asyncpg = [
 psycopg = [
     { name = "psycopg", version = "3.2.13", source = { registry = "https://pypi.org/simple" }, extra = ["binary", "pool"], marker = "python_full_version < '3.10'" },
     { name = "psycopg", version = "3.3.2", source = { registry = "https://pypi.org/simple" }, extra = ["binary", "pool"], marker = "python_full_version >= '3.10'" },
+]
+sqlite = [
+    { name = "aiosqlite" },
 ]
 
 [package.dev-dependencies]
@@ -4062,7 +4064,7 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "aiomysql", marker = "extra == 'aiomysql'" },
-    { name = "aiosqlite", specifier = ">=0.16.0,<1.0.0" },
+    { name = "aiosqlite", marker = "extra == 'sqlite'", specifier = ">=0.16.0,<1.0.0" },
     { name = "anyio" },
     { name = "asyncmy", marker = "python_full_version < '4' and extra == 'asyncmy'", specifier = ">=0.2.8,<1.0.0" },
     { name = "asyncodbc", marker = "python_full_version < '4' and extra == 'asyncodbc'", specifier = ">=0.1.1,<1.0.0" },
@@ -4074,7 +4076,7 @@ requires-dist = [
     { name = "typing-extensions", marker = "python_full_version < '3.11'", specifier = ">=4.1.0" },
     { name = "uvloop", marker = "implementation_name == 'cpython' and sys_platform != 'win32' and extra == 'accel'" },
 ]
-provides-extras = ["accel", "asyncpg", "aiomysql", "asyncmy", "psycopg", "asyncodbc"]
+provides-extras = ["accel", "sqlite", "asyncpg", "aiomysql", "asyncmy", "psycopg", "asyncodbc"]
 
 [package.metadata.requires-dev]
 contrib = [
