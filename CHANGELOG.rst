@@ -13,6 +13,12 @@ Changelog
 0.26.0 (unreleased)
 -------------------
 
+Changed
+^^^^^
+- Move aiosqlite to optional dependencies, to install it use `pip install tortoise-orm[sqlite]`
+- Remove pytz from dependencies
+- Remove iso8601 from dependencies
+
 Fixed
 ^^^^^
 - Fix 'Self' in python standard library typing.py, but tortoise/model.py required it in 'typing_extensions' (#2173)
