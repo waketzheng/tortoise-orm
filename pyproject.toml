@@ -120,7 +120,7 @@ build-backend = "pdm.backend"
 version = {source="file", path="tortoise/__init__.py"}
 
 [tool.pdm.build]
-excludes = ["./**/.git", "./**/.*_cache"]
+excludes = ["./**/.git", "./**/.*_cache", "examples"]
 include = ["CHANGELOG.rst", "LICENSE", "README.rst"]
 
 [tool.mypy]
