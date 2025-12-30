@@ -77,6 +77,11 @@ jobs:
           DEST_SANIC: examples/sanic
           PYTHONDEVMODE: 1
           PYTEST_ARGS: "-n auto --cov=tortoise --cov-append --cov-branch --tb=native -q"
+      - name: Test No typing-extensions
+        if: matrix.tortoise-orm == 'py3.14'
+        run: |
+          uv pip uninstall typing-extensions
+          uv run --no-sync python examples/basic.py
       - name: Upload Coverage
         run: |
           uvx coveralls --service=github
