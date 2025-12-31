@@ -15,7 +15,7 @@ Changelog
 
 Fixed
 ^^^^^
-- Fix 'Self' in python standard library typing.py, but tortoise/model.py required it in 'typing_extensions' (#2173)
+- Fix 'Self' in python standard library typing.py, but tortoise/model.py required it in 'typing_extensions' (#2051)
 
 0.25
 ====

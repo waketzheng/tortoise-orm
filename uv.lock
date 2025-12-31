@@ -4139,14 +4139,14 @@ test = [
 
 [[package]]
 name = "tracerite"
-version = "2.3.0"
+version = "2.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "html5tagger" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/16/00/f8a7527c9b3bc689b3a70a2bb26d46fc6e37fc2f39a302587088c9d5b421/tracerite-2.3.0.tar.gz", hash = "sha256:1fddca9817c0cd5a3a7e537b168cc790c940a4b8e7bf557c9fdbaf9dd464edc7" }
+sdist = { url = "https://files.pythonhosted.org/packages/15/b9/89b065c1818e5973c333a33311f823954ff4c7c48440c20b37669c5b752c/tracerite-2.3.1.tar.gz", hash = "sha256:f46ee672d240d500a2331781b09eb33564d473f6ae60cd871ebce6c2413cffa8" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/cf/4b/c775a3cdf40aec979364c20f828875551fedf105bcc8fc365fad2b99b785/tracerite-2.3.0-py3-none-any.whl", hash = "sha256:1255f97b0159841c29cab009ac77cc9146e9f3ef4866b359d965ad1a06d1f26c" },
+    { url = "https://files.pythonhosted.org/packages/b6/62/3f385a67ff3cc91209f107d20bbebdecf7a4e4aba55a43f9f71bddc424a9/tracerite-2.3.1-py3-none-any.whl", hash = "sha256:5f9595ba90f075b58e14a9baf84d8204fec3cdce50029f1c32d757af79d9ccbe" },
 ]
 
 [[package]]
