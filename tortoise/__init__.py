@@ -5,13 +5,12 @@ import json
 import logging
 import os
 import warnings
-from collections.abc import Callable, Coroutine, Iterable
+from collections.abc import Awaitable, Callable, Coroutine, Iterable
 from copy import deepcopy
 from inspect import isclass
 from types import ModuleType
 from typing import Any, cast
 
-from anyio import from_thread
 from pypika_tortoise import Query, Table
 
 from tortoise.backends.base.client import BaseDBAsyncClient
@@ -30,6 +29,25 @@ from tortoise.log import logger
 from tortoise.models import Model, ModelMeta
 from tortoise.timezone import _reset_timezone_cache
 from tortoise.utils import generate_schema_for_client
+
+try:
+    from anyio import from_thread
+except ImportError:
+    import asyncio
+
+    def run_until_complete(func: Callable[[], Awaitable[Any]]) -> None:
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(func())
+            loop.close()
+else:
+
+    def run_until_complete(func: Callable[[], Awaitable[Any]]) -> None:
+        with from_thread.start_blocking_portal() as portal:
+            portal.call(func)
 
 
 class Tortoise:
@@ -644,8 +662,7 @@ def run_async(coro: Coroutine) -> None:
         finally:
             await connections.close_all(discard=True)
 
-    with from_thread.start_blocking_portal() as portal:
-        portal.call(main)
+    run_until_complete(main)
 
 
 __version__ = "0.25.3"

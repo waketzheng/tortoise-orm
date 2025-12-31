@@ -86,6 +86,11 @@ jobs:
         run: |
           uv pip uninstall typing-extensions
           uv run --no-sync python examples/basic.py
+      - name: Test No anyio
+        if: matrix.tortoise-orm == 'py3.14'
+        run: |
+          uv pip uninstall anyio
+          uv run --no-sync python examples/basic.py
       - name: Upload Coverage
         run: |
           uvx coveralls --service=github
