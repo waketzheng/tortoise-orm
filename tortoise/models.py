@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import inspect
 import re
+import sys
 from collections.abc import Awaitable, Callable, Generator, Iterable
 from copy import copy, deepcopy
 from functools import partial
@@ -54,7 +55,10 @@ from tortoise.signals import Signals
 from tortoise.transactions import in_transaction
 
 if TYPE_CHECKING:
-    from typing_extensions import Self
+    if sys.version_info >= (3, 11):
+        from typing import Self
+    else:
+        from typing_extensions import Self
 
 MODEL = TypeVar("MODEL", bound="Model")
 EMPTY = object()

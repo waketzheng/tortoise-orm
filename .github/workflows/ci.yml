@@ -81,6 +81,11 @@ jobs:
         run: |
           uv pip uninstall ciso8601
           uv run --no-sync make test_sqlite
+      - name: Test No typing-extensions
+        if: matrix.tortoise-orm == 'py3.14'
+        run: |
+          uv pip uninstall typing-extensions
+          uv run --no-sync python examples/basic.py
       - name: Upload Coverage
         run: |
           uvx coveralls --service=github
