@@ -13,6 +13,10 @@ Changelog
 0.26.0 (unreleased)
 -------------------
 
+Changed
+^^^^^
+- feat: foreignkey to model type (#2027)
+
 0.25
 ====
 
