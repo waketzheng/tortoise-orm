@@ -23,6 +23,10 @@ Fixed
 ^^^^^
 - Fix 'Self' in python standard library typing.py, but tortoise/model.py required it in 'typing_extensions' (#2173)
 
+Added
+^^^^^
+- feat: foreignkey to model type (#2027)
+
 0.25
 ====
 
