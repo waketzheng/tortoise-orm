@@ -13,17 +13,19 @@ Changelog
 0.26.0 (unreleased)
 -------------------
 
+Fixed
+^^^^^
+- Fix ``AttributeError`` when using ``tortoise-orm`` with Nuitka-compiled Python code (#2053)
+- Fix 'Self' in python standard library typing.py, but tortoise/model.py required it in 'typing_extensions' (#2173)
+
 Changed
 ^^^^^
 - Move aiosqlite to optional dependencies, to install it use `pip install tortoise-orm[sqlite]`
 - Remove pytz from dependencies
 - Remove iso8601 from dependencies
 
-Fixed
-^^^^^
-- Fix 'Self' in python standard library typing.py, but tortoise/model.py required it in 'typing_extensions' (#2173)
-
 Added
+=======
 ^^^^^
 - feat: foreignkey to model type (#2027)
 
