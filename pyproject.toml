@@ -12,7 +12,9 @@ dependencies = [
     "iso8601 (>=2.1.0,<3.0.0); python_version < '4.0'",
     "aiosqlite (>=0.16.0,<1.0.0)",
     "anyio",
+    "ptpython",
     "pytz",
+    "tomlkit (>=0.11.4,<1.0.0); python_version < '3.11'",
     "typing-extensions (>= 4.1.0); python_version < '3.11'",
 ]
 classifiers = [
@@ -54,6 +56,9 @@ asyncodbc = ["asyncodbc (>=0.1.1,<1.0.0); python_version < '4.0'"]
 documentation = "https://tortoise.github.io"
 homepage = "https://github.com/tortoise/tortoise-orm"
 repository = "https://github.com/tortoise/tortoise-orm.git"
+
+[project.scripts]
+tortoise = "tortoise.cli:main"
 
 [tool.poetry]
 requires-poetry = ">=2.0"
@@ -104,6 +109,7 @@ test = [
     "pytest-xdist",
     "pytest-cov",
     "pytest-codspeed",
+    "pytest-asyncio",
 ]
 docs = [
     # Documentation tools
@@ -216,4 +222,9 @@ extend-select = [
 extra-standard-library = ["tomllib"]
 
 [tool.bandit]
-exclude_dirs = ["tests", 'examples/*/_tests.py', "conftest.py"]
+exclude_dirs = [
+    "tests",
+    "examples/*/_tests.py",
+    "conftest.py",
+    "tortoise/migrations/schema_editor/mssql.py",
+]
