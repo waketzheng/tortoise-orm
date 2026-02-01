@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import datetime
 import functools
 import json
@@ -8,7 +9,7 @@ import warnings
 from collections.abc import Callable
 from decimal import Decimal
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, Any, TypeVar, Union
+from typing import TYPE_CHECKING, Any, TypeVar
 from uuid import UUID, uuid4
 
 from pypika_tortoise import functions
@@ -131,7 +132,7 @@ T = TypeVar("T")
 
 # Doing this we can replace json dumps/loads with different implementations
 JsonDumpsFunc = Callable[[Any], str]
-JsonLoadsFunc = Callable[[Union[str, bytes]], Any]
+JsonLoadsFunc = Callable[[str | bytes], Any]
 JSON_DUMPS: JsonDumpsFunc = functools.partial(json.dumps, separators=(",", ":"))
 JSON_LOADS: JsonLoadsFunc = json.loads
 
@@ -389,6 +390,7 @@ class DecimalField(Field[Decimal], Decimal):
 DatetimeFieldQueryValueType = TypeVar(
     "DatetimeFieldQueryValueType", datetime.datetime, int, float, str
 )
+DateFieldQueryValueType = TypeVar("DateFieldQueryValueType", datetime.date, int, float, str)
 
 
 class DatetimeField(Field[datetime.datetime], datetime.datetime):
@@ -490,10 +492,11 @@ class DateField(Field[datetime.date], datetime.date):
         return value
 
     def to_db_value(
-        self, value: datetime.date | str | None, instance: type[Model] | Model
-    ) -> datetime.date | None:
-        if value is not None and not isinstance(value, datetime.date):
-            value = parse_datetime(value).date()
+        self, value: DateFieldQueryValueType | None, instance: type[Model] | Model
+    ) -> DateFieldQueryValueType | None:
+        if value is not None and isinstance(value, str) and len(value) > 4:
+            with contextlib.suppress(ValueError):
+                value = parse_datetime(value).date()  # type: ignore[assignment]
         self.validate(value)
         return value
 

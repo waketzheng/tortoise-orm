@@ -45,7 +45,7 @@ jobs:
       TORTOISE_MSSQL_DRIVER: ODBC Driver 18 for SQL Server
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/cache@v5
         with:
@@ -78,9 +78,18 @@ jobs:
           PYTHONDEVMODE: 1
           PYTEST_ARGS: "-n auto --cov=tortoise --cov-append --cov-branch --tb=native -q"
       - name: Test not ciso8601
+        if: matrix.python-version == 'py3.10'
         run: |
           uv pip uninstall ciso8601
           uv run --no-sync make test_sqlite
+      - name: Test poetry add
+        if: matrix.python-version == 'py3.10'
+        run: |
+          uv run --no-sync pytest $PYTEST_ARGS tests/test_version.py::test_added_by_poetry_v2
+        env:
+          TORTOISE_TEST_POETRY_ADD: 1
+          PYTHONDEVMODE: 1
+          PYTEST_ARGS: "-n auto --cov=tortoise --cov-append --cov-branch --tb=native -q"
       - name: Test No typing-extensions
         if: matrix.python-version == 'py3.11'
         run: |
@@ -90,6 +99,12 @@ jobs:
         if: matrix.tortoise-orm == 'py3.14'
         run: |
           uv pip uninstall anyio
+          uv run --no-sync python examples/basic.py
+      - name: Test only aiosqlite
+        if: matrix.tortoise-orm == 'py3.12'
+        run: |
+          uv sync
+          uv pip install aiosqlite
           uv run --no-sync python examples/basic.py
       - name: Upload Coverage
         run: |
