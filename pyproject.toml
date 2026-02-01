@@ -59,13 +59,6 @@ repository = "https://github.com/tortoise/tortoise-orm.git"
 [project.scripts]
 tortoise = "tortoise.cli:main"
 
-[tool.poetry]
-requires-poetry = ">=2.0"
-packages = [
-    { include = "tortoise" }
-]
-version = "0.0.0"
-
 [dependency-groups]
 dev = [
     # Linter tools

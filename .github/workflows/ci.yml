@@ -77,6 +77,14 @@ jobs:
           DEST_SANIC: examples/sanic
           PYTHONDEVMODE: 1
           PYTEST_ARGS: "-n auto --cov=tortoise --cov-append --cov-branch --tb=native -q"
+      - name: Test poetry add
+        if: matrix.python-version == 'py3.10'
+        run: |
+          uv run --no-sync pytest $PYTEST_ARGS tests/test_version.py::test_added_by_poetry_v2
+        env:
+          TORTOISE_TEST_POETRY_ADD: 1
+          PYTHONDEVMODE: 1
+          PYTEST_ARGS: "-n auto --cov=tortoise --cov-append --cov-branch --tb=native -q"
       - name: Test No typing-extensions
         if: matrix.python-version == 'py3.11'
         run: |
