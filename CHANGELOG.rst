@@ -50,12 +50,20 @@ Deprecated
 
 Fixed
 ^^^^^
-- Fix ``AttributeError`` when using ``tortoise-orm`` with Nuitka-compiled Python code (#2053)
-- Fix 'Self' in python standard library typing.py, but tortoise/model.py required it in 'typing_extensions' (#2051)
 - Fix annotations being selected in ValuesListQuery despite not specified in `.values_list` fields list (#2059)
 
 0.25
 ====
+
+0.25.4
+------
+
+Fixed
+^^^^^
+- Fix ``AttributeError`` when using ``tortoise-orm`` with Nuitka-compiled Python code (#2053)
+- Fix 'Self' in python standard library typing.py, but tortoise/model.py required it in 'typing_extensions' (#2051)
+- Fix examples should not be installed (#2050)
+
 
 0.25.3
 ------
