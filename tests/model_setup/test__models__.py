@@ -10,18 +10,21 @@ import pytest
 
 from tortoise import Tortoise, connections
 from tortoise.backends.base.config_generator import generate_config
-from tortoise.exceptions import ConfigurationError
+from tortoise.context import get_current_context
 from tortoise.utils import get_schema_sql
 
 
 async def _reset_tortoise():
     """Helper to reset Tortoise state before each test."""
-    try:
-        Tortoise.apps = None
-        Tortoise._inited = False
-    except ConfigurationError:
-        pass
-    Tortoise._inited = False
+    ctx = get_current_context()
+    if ctx is not None:
+        if ctx._connections is not None:
+            ctx._connections._storage.clear()
+            ctx._connections._db_config = None
+            ctx._connections = None
+        ctx._apps = None
+        ctx._inited = False
+        ctx._default_connection = None
 
 
 def _get_engine() -> str:
