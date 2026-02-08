@@ -86,7 +86,20 @@ class UserTester:
         data = response.json()
         assert isinstance(data, list)
         item = await User_Pydantic.from_tortoise_orm(user_obj)
-        assert JSON_LOADS(item.model_dump_json()) in data
+        item_dict = JSON_LOADS(item.model_dump_json())
+        api_item = next((x for x in data if x["id"] == user_obj.id), None)
+        assert api_item is not None, f"User {user_obj.id} not found in response"
+        for key, value in item_dict.items():
+            assert key in api_item, f"Key {key!r} missing from API response"
+            if key in ("created_at", "modified_at"):
+                # Compare as datetime objects to handle timezone format differences
+                # (Pydantic normalizes to UTC, FastAPI preserves original timezone)
+                # Replace trailing 'Z' with '+00:00' for fromisoformat() compatibility
+                a = datetime.fromisoformat(api_item[key].replace("Z", "+00:00"))
+                b = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                assert a == b, f"Datetime mismatch on {key!r}: {api_item[key]} != {value}"
+            else:
+                assert api_item[key] == value, f"Mismatch on {key!r}"
         return utc_now, user_obj, item
 
 
