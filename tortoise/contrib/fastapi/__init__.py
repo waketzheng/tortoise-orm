@@ -17,11 +17,10 @@ from tortoise.log import logger
 if TYPE_CHECKING:
     from fastapi import FastAPI, Request
 
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
+    if sys.version_info >= (3, 11):
+        from typing import Self
+    else:
+        from typing_extensions import Self
 
 
 def tortoise_exception_handlers() -> dict:

@@ -13,7 +13,6 @@ dependencies = [
     "aiosqlite (>=0.16.0,<1.0.0)",
     "anyio",
     "tomlkit (>=0.11.4,<1.0.0); python_version < '3.11'",
-    "typing-extensions (>= 4.1.0); python_version < '3.11'",
 ]
 classifiers = [
     "License :: OSI Approved :: Apache Software License",
@@ -66,6 +65,7 @@ tortoise = "tortoise.cli:main"
 
 [dependency-groups]
 dev = [
+    "typing-extensions (>=4.1.0); python_version < '3.11'",
     # Linter tools
     "mypy",
     "ruff",
