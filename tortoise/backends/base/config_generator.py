@@ -130,47 +130,36 @@ DB_LOOKUP["postgres"] = DB_LOOKUP["asyncpg"]
 
 
 def _quote_url_userinfo(db_url: str) -> str:
-    """Quote special characters in username and password to avoid URL parsing issues.
+    """Encode characters in the userinfo section that break urlparse.
 
-    urlparse fails when passwords contain characters like '[' or ']' because it
-    tries to parse them as IPv6 addresses. This function percent-encodes the userinfo
-    part (username:password) while leaving the rest of the URL intact.
-
-    Only characters that cause parsing issues (like '[' and ']') are encoded.
-    Already percent-encoded sequences (like %25) are preserved.
+    Specifically, '[' and ']' cause urlparse to fail with a ValueError because
+    it interprets them as IPv6 address brackets. This encodes only those characters,
+    leaving everything else (including '%') untouched.
     """
-    # Find the scheme delimiter
     scheme_end = db_url.find("://")
     if scheme_end == -1:
         return db_url
 
-    scheme = db_url[: scheme_end + 3]  # Include "://"
+    scheme = db_url[: scheme_end + 3]
     rest = db_url[scheme_end + 3 :]
 
-    # Find the userinfo section (everything before @)
     at_pos = rest.find("@")
     if at_pos == -1:
-        # No credentials
         return db_url
 
     userinfo = rest[:at_pos]
     after_userinfo = rest[at_pos:]
 
-    # Split userinfo into username and password
     colon_pos = userinfo.find(":")
     if colon_pos == -1:
-        # No password, just username
-        # Only quote characters that cause parsing issues
-        username = urlparse.quote(userinfo, safe="%")
+        username = userinfo.replace("[", "%5B").replace("]", "%5D")
         return scheme + username + after_userinfo
-    else:
-        username = userinfo[:colon_pos]
-        password = userinfo[colon_pos + 1 :]
-        # Quote username and password, but preserve already-encoded sequences
-        # We keep % as safe so existing percent-encoded chars aren't double-encoded
-        username_quoted = urlparse.quote(username, safe="%")
-        password_quoted = urlparse.quote(password, safe="%")
-        return scheme + username_quoted + ":" + password_quoted + after_userinfo
+
+    username = userinfo[:colon_pos]
+    password = userinfo[colon_pos + 1 :]
+    username_quoted = username.replace("[", "%5B").replace("]", "%5D")
+    password_quoted = password.replace("[", "%5B").replace("]", "%5D")
+    return scheme + username_quoted + ":" + password_quoted + after_userinfo
 
 
 def expand_db_url(db_url: str, testing: bool = False) -> dict:
