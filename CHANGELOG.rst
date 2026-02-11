@@ -1,13 +1,11 @@
 .. _changelog:
-:no-search:
 
 =========
 Changelog
 =========
 
-.. rst-class:: emphasize-children
 
-1.0
+1.1
 ===
 
 1.1.0
@@ -27,6 +25,10 @@ Fixed
 - Escape ``[`` ``]`` for db url parsing. (#2081) (#2092)
 - Fix ``UnicodeEncodeError`` by using UTF-8 encoding for migration files. (#2096, #2097)
 
+
+
+1.0
+===
 
 1.0.0
 -----
@@ -904,7 +906,6 @@ Removals:
 
   If you still need Python 3.6 support, you can install ``tortoise-orm<0.16`` as we will still backport critical bugfixes to the 0.15 branch for a while.
 
-.. rst-class:: emphasize-children
 
 0.15
 ====
@@ -1095,7 +1096,6 @@ Deprecations:
   There is a known context confusion, specifically regarding nested transactions.
 
 
-.. rst-class:: emphasize-children
 
 0.14
 ====
@@ -1151,7 +1151,6 @@ Breaking Changes:
   the new hash algorithm is much better in this regard.
 - Dropped support for Python 3.5
 
-.. rst-class:: emphasize-children
 
 0.13
 ====
@@ -1284,7 +1283,6 @@ Docs/examples:
 - Lots of small documentation cleanups
 
 
-.. rst-class:: emphasize-children
 
 0.12
 ====
@@ -1378,7 +1376,6 @@ Docs/examples:
       guid = fields.UUIDField(pk=True)
 
 
-.. rst-class:: emphasize-children
 
 0.11
 ====
@@ -1488,7 +1485,6 @@ Docs/examples:
 - Numerous bug fixes
 - Removed known broken connection pooling
 
-.. rst-class:: emphasize-children
 
 0.10
 ====
@@ -1593,7 +1589,6 @@ Docs/examples:
 - Added support for MySQL/MariaDB
 
 
-.. rst-class:: emphasize-children
 
 0.9 & older
 ===========

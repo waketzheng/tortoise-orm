@@ -19,5 +19,4 @@ TORTOISE_ORM = TortoiseConfig(
 register_orm = partial(
     RegisterTortoise,
     config=TORTOISE_ORM,
-    generate_schemas=True,
 )
