@@ -28,6 +28,13 @@ except ImportError:  # pragma: nocoverage
 
     parse_datetime = functools.partial(parse_date, default_timezone=None)
 
+try:
+    from pydantic import BaseModel as _PydanticBaseModel
+    from pydantic._internal._model_construction import ModelMetaclass as _PydanticModelMetaclass
+except ImportError:
+    _PydanticBaseModel = None  # type: ignore[assignment,misc]
+    _PydanticModelMetaclass = None  # type: ignore[assignment,misc]
+
 if TYPE_CHECKING:  # pragma: nocoverage
     from tortoise.models import Model
 
@@ -767,13 +774,8 @@ class JSONField(Field[T], dict, list):  # type: ignore
                 return value.decode()
             return value
 
-        try:
-            from pydantic import BaseModel
-
-            if isinstance(value, BaseModel):
-                value = value.model_dump()
-        except ImportError:
-            pass
+        if _PydanticBaseModel is not None and isinstance(value, _PydanticBaseModel):
+            value = value.model_dump()
 
         return self.encoder(value)
 
@@ -783,20 +785,19 @@ class JSONField(Field[T], dict, list):  # type: ignore
         if isinstance(value, (str, bytes)):
             try:
                 data = self.decoder(value)
-
-                try:
-                    from pydantic._internal._model_construction import ModelMetaclass
-
-                    if isinstance(self.field_type, ModelMetaclass) and not isinstance(data, list):
-                        return self.field_type(**data)
-                except ImportError:
-                    pass
-
-                return data
             except Exception:
                 raise FieldError(
                     f"Value {value if isinstance(value, str) else value.decode()} is invalid json value."
                 )
+
+            if (
+                _PydanticModelMetaclass is not None
+                and isinstance(self.field_type, _PydanticModelMetaclass)
+                and not isinstance(data, list)
+            ):
+                return self.field_type(**data)
+
+            return data
 
         return value
 
