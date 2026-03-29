@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from contextlib import asynccontextmanager
 from types import ModuleType
+from typing import TYPE_CHECKING
 
-from starlette.applications import Starlette  # pylint: disable=E0401
+from starlette.routing import _DefaultLifespan as StarletteDefaultLifespan
 
 from tortoise import Tortoise
 from tortoise.connection import get_connections
 from tortoise.log import logger
+
+if TYPE_CHECKING:
+    from starlette.applications import Starlette  # pylint: disable=E0401
 
 
 def register_tortoise(
@@ -80,7 +85,6 @@ def register_tortoise(
         For any configuration error
     """
 
-    @app.on_event("startup")
     async def init_orm() -> None:  # pylint: disable=W0612
         await Tortoise.init(config=config, config_file=config_file, db_url=db_url, modules=modules)
         logger.info("Tortoise-ORM started, %s, %s", get_connections()._get_storage(), Tortoise.apps)
@@ -88,7 +92,30 @@ def register_tortoise(
             logger.info("Tortoise-ORM generating schema")
             await Tortoise.generate_schemas()
 
-    @app.on_event("shutdown")
     async def close_orm() -> None:  # pylint: disable=W0612
         await Tortoise.close_connections()
         logger.info("Tortoise-ORM shutdown")
+
+    @asynccontextmanager
+    async def orm_lifespan(app_instance: Starlette):
+        await init_orm()
+        try:
+            yield
+        finally:
+            await close_orm()
+
+    original_lifespan = app.router.lifespan_context
+    if isinstance(original_lifespan, StarletteDefaultLifespan):
+        app.router.lifespan_context = orm_lifespan
+    else:
+
+        @asynccontextmanager
+        async def merged_lifespan(app_instance: Starlette):
+            async with orm_lifespan(app_instance):
+                async with original_lifespan(app_instance) as maybe_state:
+                    if maybe_state is None:
+                        yield
+                    else:
+                        yield {**(maybe_state or {})}
+
+        app.router.lifespan_context = merged_lifespan
