@@ -1,18 +1,15 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from contextlib import asynccontextmanager
 from types import ModuleType
-from typing import TYPE_CHECKING
 
-from starlette.routing import _DefaultLifespan as StarletteDefaultLifespan
+import starlette
+from starlette.applications import Starlette  # pylint: disable=E0401
 
 from tortoise import Tortoise
 from tortoise.connection import get_connections
+from tortoise.exceptions import UnSupportedError
 from tortoise.log import logger
-
-if TYPE_CHECKING:
-    from starlette.applications import Starlette  # pylint: disable=E0401
 
 
 def register_tortoise(
@@ -96,26 +93,9 @@ def register_tortoise(
         await Tortoise.close_connections()
         logger.info("Tortoise-ORM shutdown")
 
-    @asynccontextmanager
-    async def orm_lifespan(app_instance: Starlette):
-        await init_orm()
-        try:
-            yield
-        finally:
-            await close_orm()
-
-    original_lifespan = app.router.lifespan_context
-    if isinstance(original_lifespan, StarletteDefaultLifespan):
-        app.router.lifespan_context = orm_lifespan
+    if starlette.__version__ < "1":
+        if (on_event := getattr(app, "on_event", None)) is not None:
+            on_event("startup")(init_orm)
+            on_event("shutdown")(close_orm)
     else:
-
-        @asynccontextmanager
-        async def merged_lifespan(app_instance: Starlette):
-            async with orm_lifespan(app_instance):
-                async with original_lifespan(app_instance) as maybe_state:
-                    if maybe_state is None:
-                        yield
-                    else:
-                        yield {**(maybe_state or {})}
-
-        app.router.lifespan_context = merged_lifespan
+        raise UnSupportedError("Does not support Starlette 1.0 yet")
