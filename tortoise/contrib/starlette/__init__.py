@@ -1,14 +1,20 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+import functools
+from collections.abc import Awaitable, Callable, Iterable
+from contextlib import asynccontextmanager
 from types import ModuleType
+from typing import TypeVar
 
 import starlette
 from starlette.applications import Starlette  # pylint: disable=E0401
+from starlette.routing import Host, Mount, Route, is_async_callable
+from starlette.routing import _DefaultLifespan as StarletteDefaultLifespan
 
 from tortoise import Tortoise
+from tortoise.config import TortoiseConfig
 from tortoise.connection import get_connections
-from tortoise.exceptions import UnSupportedError
+from tortoise.context import TortoiseContext
 from tortoise.log import logger
 
 
@@ -81,9 +87,10 @@ def register_tortoise(
     ConfigurationError
         For any configuration error
     """
+    typed_config = TortoiseConfig.merge_args(config, config_file, db_url, modules)
 
     async def init_orm() -> None:  # pylint: disable=W0612
-        await Tortoise.init(config=config, config_file=config_file, db_url=db_url, modules=modules)
+        await Tortoise.init(config=typed_config, _enable_global_fallback=True)
         logger.info("Tortoise-ORM started, %s, %s", get_connections()._get_storage(), Tortoise.apps)
         if generate_schemas:
             logger.info("Tortoise-ORM generating schema")
@@ -98,4 +105,44 @@ def register_tortoise(
             on_event("startup")(init_orm)
             on_event("shutdown")(close_orm)
     else:
-        raise UnSupportedError("Does not support Starlette 1.0 yet")
+        original_lifespan = app.router.lifespan_context
+
+        if generate_schemas or not isinstance(original_lifespan, StarletteDefaultLifespan):
+
+            @asynccontextmanager
+            async def orm_inited_lifespan(app_):
+                await init_orm()
+                try:
+                    async with original_lifespan(app_) as maybe_state:
+                        yield maybe_state
+                finally:
+                    await close_orm()
+
+            app.router.lifespan_context = orm_inited_lifespan
+
+        if app.router.routes:
+            T = TypeVar("T")
+
+            def db_session(func: Callable[..., Awaitable[T]]):
+                @functools.wraps(func)
+                async def runner(*args, **kw) -> T:
+                    async with TortoiseContext() as ctx:
+                        await ctx.init(typed_config)
+                        return await func(*args, **kw)
+
+                return runner
+
+            key = "_patch_tortoise"
+
+            def patch_endpoints(routes: list) -> None:
+                for r in routes:
+                    if isinstance(r, Route):
+                        if getattr(r, key, False):
+                            continue
+                        setattr(r, key, True)
+                        if is_async_callable(endpoint := r.endpoint):
+                            r.endpoint = db_session(endpoint)
+                    elif isinstance(r, Mount | Host) or getattr(r, "routes", []):
+                        patch_endpoints(r.routes)
+
+            patch_endpoints(app.router.routes)
