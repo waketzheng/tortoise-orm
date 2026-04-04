@@ -14,6 +14,8 @@ from tortoise.contrib.starlette import register_tortoise
 
 logging.basicConfig(level=logging.DEBUG)
 
+app = Starlette()
+
 
 async def list_all(_: Request) -> JSONResponse:
     users = await Users.all()
@@ -48,6 +50,6 @@ register_tortoise(
 )
 
 if __name__ == "__main__":
-    from uvicorn.main import run
+    import uvicorn
 
-    run("__main__:app", reload=True)
+    uvicorn.run("__main__:app", reload=True)
