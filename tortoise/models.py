@@ -873,7 +873,7 @@ class Model(metaclass=ModelMeta):
             yield field, getattr(self, field)
 
     def __eq__(self, other: object) -> bool:
-        return type(other) is type(self) and self.pk == other.pk
+        return type(other) is type(self) and self.pk == other.pk  # type: ignore
 
     def _get_pk_val(self) -> Any:
         return getattr(self, self._meta.pk_attr, None)
