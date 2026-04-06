@@ -2,9 +2,13 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from tortoise.exceptions import ConfigurationError
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+    from types import ModuleType
 
 
 @dataclass(frozen=True)
@@ -202,3 +206,36 @@ class TortoiseConfig:
             use_tz=data.get("use_tz"),
             timezone=data.get("timezone"),
         )
+
+    @classmethod
+    def merge_args(
+        cls,
+        config: dict[str, Any] | TortoiseConfig | None = None,
+        config_file: str | None = None,
+        db_url: str | None = None,
+        modules: dict[str, Iterable[str | ModuleType]] | None = None,
+    ) -> TortoiseConfig:
+        # Handle config_file: load it as config dict
+        if config_file is not None:
+            from tortoise import Tortoise
+
+            if config is not None:
+                raise ConfigurationError("Cannot specify both 'config' and 'config_file'")
+            config = Tortoise._get_config_from_config_file(config_file)
+
+        # Convert input to TortoiseConfig for typed access
+        typed_config: TortoiseConfig
+        if config is None:
+            from tortoise.backends.base.config_generator import generate_config
+
+            if db_url is None or modules is None:
+                raise ConfigurationError(
+                    "Must provide either 'config', 'config_file', or both 'db_url' and 'modules'"
+                )
+            config_dict = generate_config(db_url, app_modules=modules)
+            typed_config = cls.from_dict(config_dict)
+        elif isinstance(config, dict):
+            typed_config = cls.from_dict(config)
+        else:
+            typed_config = config
+        return typed_config
