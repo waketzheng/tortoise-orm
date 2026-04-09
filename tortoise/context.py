@@ -236,26 +236,6 @@ class TortoiseContext:
         """
         return self._routers
 
-    def _get_config_from_config_file(self, config_file: str) -> dict:
-        """Load configuration from a JSON or YAML file."""
-        import json
-        import os
-
-        _, extension = os.path.splitext(config_file)
-        if extension in (".yml", ".yaml"):
-            import yaml  # pylint: disable=C0415
-
-            with open(config_file) as f:
-                config = yaml.safe_load(f)
-        elif extension == ".json":
-            with open(config_file) as f:
-                config = json.load(f)
-        else:
-            raise ConfigurationError(
-                f"Unknown config extension {extension}, only .yml and .json are supported"
-            )
-        return config
-
     async def init(
         self,
         config: dict[str, Any] | TortoiseConfig | None = None,

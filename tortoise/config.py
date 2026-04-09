@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import os
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
@@ -215,27 +217,35 @@ class TortoiseConfig:
         db_url: str | None = None,
         modules: dict[str, Iterable[str | ModuleType]] | None = None,
     ) -> TortoiseConfig:
-        # Handle config_file: load it as config dict
-        if config_file is not None:
-            from tortoise import Tortoise
-
-            if config is not None:
+        if config is not None:
+            if config_file is not None:
                 raise ConfigurationError("Cannot specify both 'config' and 'config_file'")
-            config = Tortoise._get_config_from_config_file(config_file)
-
-        # Convert input to TortoiseConfig for typed access
-        typed_config: TortoiseConfig
-        if config is None:
+            return cls.from_dict(config) if isinstance(config, dict) else config
+        elif config_file is not None:
+            return cls._get_config_from_config_file(config_file)
+        elif db_url is None or modules is None:
+            raise ConfigurationError(
+                "Must provide either 'config', 'config_file', or both 'db_url' and 'modules'"
+            )
+        else:
             from tortoise.backends.base.config_generator import generate_config
 
-            if db_url is None or modules is None:
-                raise ConfigurationError(
-                    "Must provide either 'config', 'config_file', or both 'db_url' and 'modules'"
-                )
             config_dict = generate_config(db_url, app_modules=modules)
-            typed_config = cls.from_dict(config_dict)
-        elif isinstance(config, dict):
-            typed_config = cls.from_dict(config)
+            return cls.from_dict(config_dict)
+
+    @classmethod
+    def _get_config_from_config_file(cls, config_file: str) -> TortoiseConfig:
+        _, extension = os.path.splitext(config_file)
+        if extension in (".yml", ".yaml"):
+            import yaml  # pylint: disable=C0415
+
+            with open(config_file) as f:
+                config = yaml.safe_load(f)
+        elif extension == ".json":
+            with open(config_file) as f:
+                config = json.load(f)
         else:
-            typed_config = config
-        return typed_config
+            raise ConfigurationError(
+                f"Unknown config extension {extension}, only .yml and .json are supported"
+            )
+        return cls.from_dict(config)

@@ -19,10 +19,10 @@ async def plan(
     """
     Print an ordered migration plan and return the formatted lines.
     """
+    if config_file:
+        config = TortoiseConfig._get_config_from_config_file(config_file)
     if isinstance(config, TortoiseConfig):
         config = config.to_dict()
-    if config_file:
-        config = Tortoise._get_config_from_config_file(config_file)
     if not config:
         raise ValueError("plan requires a config or config_file")
 
