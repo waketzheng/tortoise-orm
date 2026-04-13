@@ -9,8 +9,14 @@ from typing import TYPE_CHECKING, Any
 from tortoise.exceptions import ConfigurationError
 
 if TYPE_CHECKING:
+    import sys
     from collections.abc import Iterable
     from types import ModuleType
+
+    if sys.version_info >= (3, 11):
+        from typing import Self
+    else:
+        from typing_extensions import Self
 
 
 @dataclass(frozen=True)
@@ -165,7 +171,7 @@ class TortoiseConfig:
         return config
 
     @classmethod
-    def from_dict(cls, data: Mapping[str, Any]) -> TortoiseConfig:
+    def from_dict(cls, data: Mapping[str, Any]) -> Self:
         if not isinstance(data, Mapping):
             raise ConfigurationError("TortoiseConfig must be created from a mapping")
 
@@ -212,11 +218,11 @@ class TortoiseConfig:
     @classmethod
     def merge_args(
         cls,
-        config: dict[str, Any] | TortoiseConfig | None = None,
+        config: dict[str, Any] | Self | None = None,
         config_file: str | None = None,
         db_url: str | None = None,
         modules: dict[str, Iterable[str | ModuleType]] | None = None,
-    ) -> TortoiseConfig:
+    ) -> Self:
         if config is not None:
             if config_file is not None:
                 raise ConfigurationError("Cannot specify both 'config' and 'config_file'")
@@ -228,13 +234,17 @@ class TortoiseConfig:
                 "Must provide either 'config', 'config_file', or both 'db_url' and 'modules'"
             )
         else:
-            from tortoise.backends.base.config_generator import generate_config
-
-            config_dict = generate_config(db_url, app_modules=modules)
-            return cls.from_dict(config_dict)
+            return cls.generate_config(db_url, modules)
 
     @classmethod
-    def _get_config_from_config_file(cls, config_file: str) -> TortoiseConfig:
+    def generate_config(cls, db_url: str, modules: dict[str, Iterable[str | ModuleType]]) -> Self:
+        from tortoise.backends.base.config_generator import generate_config
+
+        config_dict = generate_config(db_url, app_modules=modules)
+        return cls.from_dict(config_dict)
+
+    @classmethod
+    def _get_config_from_config_file(cls, config_file: str) -> Self:
         _, extension = os.path.splitext(config_file)
         if extension in (".yml", ".yaml"):
             import yaml  # pylint: disable=C0415
