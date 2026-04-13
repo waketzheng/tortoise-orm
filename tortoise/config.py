@@ -228,7 +228,7 @@ class TortoiseConfig:
                 raise ConfigurationError("Cannot specify both 'config' and 'config_file'")
             return cls.from_dict(config) if isinstance(config, dict) else config
         elif config_file is not None:
-            return cls._get_config_from_config_file(config_file)
+            return cls.get_config_from_config_file(config_file)
         elif db_url is None or modules is None:
             raise ConfigurationError(
                 "Must provide either 'config', 'config_file', or both 'db_url' and 'modules'"
@@ -244,7 +244,7 @@ class TortoiseConfig:
         return cls.from_dict(config_dict)
 
     @classmethod
-    def _get_config_from_config_file(cls, config_file: str) -> Self:
+    def get_config_from_config_file(cls, config_file: str) -> Self:
         _, extension = os.path.splitext(config_file)
         if extension in (".yml", ".yaml"):
             import yaml  # pylint: disable=C0415

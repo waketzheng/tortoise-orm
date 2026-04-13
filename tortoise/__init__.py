@@ -390,7 +390,7 @@ class Tortoise(metaclass=_TortoiseMeta):
         # Normalize config: handle config_file case
         normalized_config: dict[str, Any] | TortoiseConfig | None = config
         if config_file:
-            normalized_config = TortoiseConfig._get_config_from_config_file(config_file)
+            normalized_config = TortoiseConfig.get_config_from_config_file(config_file)
 
         # Debug logging
         if logger.isEnabledFor(logging.DEBUG) and normalized_config is not None:
