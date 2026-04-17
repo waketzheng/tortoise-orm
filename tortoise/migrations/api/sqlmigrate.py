@@ -43,7 +43,7 @@ async def sqlmigrate(
     Returns:
         A list of SQL strings (including descriptive comment annotations).
     """
-    config = TortoiseConfig.merge_args(config, config_file).to_dict()
+    config = TortoiseConfig.resolve_args(config, config_file).to_dict()
     if not config:
         raise ValueError("sqlmigrate requires a config or config_file")
 

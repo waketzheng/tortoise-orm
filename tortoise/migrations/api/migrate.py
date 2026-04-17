@@ -23,7 +23,7 @@ async def migrate(
     progress: Callable[[str, str, str], object] | None = None,
 ) -> None:
     """Run migrations for configured apps."""
-    config = TortoiseConfig.merge_args(config, config_file).to_dict()
+    config = TortoiseConfig.resolve_args(config, config_file).to_dict()
     if not config:
         raise ValueError("migrate requires a config or config_file")
 

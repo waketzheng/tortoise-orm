@@ -177,7 +177,7 @@ def _load_config(ctx: CLIContext) -> TortoiseConfig:
     config_value = ctx.config
     config_file = ctx.config_file
     if config_file:
-        return TortoiseConfig.get_config_from_config_file(config_file)
+        return TortoiseConfig.from_config_file(config_file)
     if not config_value:
         config_value = utils.tortoise_orm_config()
         if not config_value:

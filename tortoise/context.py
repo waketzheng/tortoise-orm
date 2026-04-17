@@ -283,7 +283,7 @@ class TortoiseContext:
         """
         from tortoise.apps import Apps
 
-        typed_config = TortoiseConfig.merge_args(config, config_file, db_url, modules)
+        typed_config = TortoiseConfig.resolve_args(config, config_file, db_url, modules)
         config_dict = typed_config.to_dict()
         connections_config = config_dict["connections"]
         apps_config = config_dict["apps"]
