@@ -310,9 +310,8 @@ class TortoiseConfig:
             return cls.from_dict(config) if isinstance(config, dict) else config
         elif config_file is not None:
             return cls.from_config_file(config_file)
-        elif db_url is None or modules is None:
-            raise ConfigurationError(
-                "Must provide either 'config', 'config_file', or both 'db_url' and 'modules'"
-            )
-        else:
+        elif db_url is not None and modules is not None:
             return cls.from_db_url_and_modules(db_url, modules)
+        raise ConfigurationError(
+            "Must provide either 'config', 'config_file', or both 'db_url' and 'modules'"
+        )
