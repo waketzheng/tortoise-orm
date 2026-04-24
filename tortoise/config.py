@@ -6,6 +6,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
+from tortoise.backends.base.config_generator import generate_config
 from tortoise.exceptions import ConfigurationError
 
 if TYPE_CHECKING:
@@ -58,7 +59,7 @@ class ConnectionConfig:
         return {"engine": self.engine, "credentials": self.credentials}
 
     @classmethod
-    def from_dict(cls, data: Mapping[str, Any]) -> ConnectionConfig:
+    def from_dict(cls, data: Mapping[str, Any]) -> Self:
         if not isinstance(data, Mapping):
             raise ConfigurationError("ConnectionConfig must be created from a mapping")
         credentials = data.get("credentials", {})
@@ -97,7 +98,7 @@ class AppConfig:
         return data
 
     @classmethod
-    def from_dict(cls, data: Mapping[str, Any]) -> AppConfig:
+    def from_dict(cls, data: Mapping[str, Any]) -> Self:
         if not isinstance(data, Mapping):
             raise ConfigurationError("AppConfig must be created from a mapping")
         if "models" not in data:
@@ -266,8 +267,6 @@ class TortoiseConfig:
         Raises:
             ConfigurationError: If the generated config is invalid.
         """
-        from tortoise.backends.base.config_generator import generate_config
-
         config_dict = generate_config(db_url, app_modules=modules)
         return cls.from_dict(config_dict)
 
