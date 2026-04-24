@@ -174,16 +174,13 @@ def _load_config(ctx: CLIContext) -> TortoiseConfig:
     Returns:
         TortoiseConfig: Validated configuration object
     """
-    config_value = ctx.config
-    config_file = ctx.config_file
-    if config_file:
+    if config_file := ctx.config_file:
         return TortoiseConfig.from_config_file(config_file)
+    config_value = ctx.config or utils.tortoise_orm_config()
     if not config_value:
-        config_value = utils.tortoise_orm_config()
-        if not config_value:
-            raise utils.CLIUsageError(
-                "You must specify TORTOISE_ORM in option or env, or pyproject.toml [tool.tortoise]",
-            )
+        raise utils.CLIUsageError(
+            "You must specify TORTOISE_ORM in option or env, or pyproject.toml [tool.tortoise]",
+        )
     return utils.get_tortoise_config(config_value)
 
 
