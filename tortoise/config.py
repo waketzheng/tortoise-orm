@@ -4,7 +4,7 @@ import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, TypeGuard
+from typing import TYPE_CHECKING, Any
 
 from tortoise.backends.base.config_generator import generate_config
 from tortoise.exceptions import ConfigurationError
@@ -18,10 +18,6 @@ if TYPE_CHECKING:
         from typing import Self
     else:
         from typing_extensions import Self
-
-
-def is_string_list(val: list) -> TypeGuard[list[str]]:
-    return isinstance(val, list) and all(isinstance(x, str) for x in val)
 
 
 @dataclass(frozen=True)
@@ -105,14 +101,12 @@ class AppConfig:
     def from_dict(cls, data: Mapping[str, Any]) -> Self:
         if not isinstance(data, Mapping):
             raise ConfigurationError("AppConfig must be created from a mapping")
-        try:
-            models = data["models"]
-        except KeyError as e:
-            raise ConfigurationError('AppConfig requires "models"') from e
-        if not is_string_list(models):
+        if "models" not in data:
+            raise ConfigurationError('AppConfig requires "models"')
+        if not isinstance(data["models"], list):
             raise ConfigurationError("AppConfig.models must be a list of strings")
         return cls(
-            models=models,
+            models=list(data["models"]),
             default_connection=data.get("default_connection"),
             migrations=data.get("migrations"),
         )
@@ -223,7 +217,7 @@ class TortoiseConfig:
         )
 
     @classmethod
-    def from_config_file(cls, config_file: str | Path) -> Self:
+    def from_config_file(cls, config_file: Path | str) -> Self:
         """
         Load configuration from a YAML or JSON file.
 
