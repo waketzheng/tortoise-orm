@@ -8,6 +8,7 @@ import orjson
 import pytest
 import yaml
 
+from tortoise.backends.base.config_generator import expand_db_url
 from tortoise.config import TortoiseConfig
 from tortoise.exceptions import ConfigurationError
 
@@ -127,3 +128,40 @@ class TestTortoiseConfig:
         typed_config = TortoiseConfig.from_db_url_and_modules(db_url, modules)
         assert typed_config == TortoiseConfig.resolve_args(db_url=db_url, modules=modules)
         assert typed_config.apps == TortoiseConfig.from_dict(simple).apps
+
+    def test_resolve_args(self, tmp_path: Path):
+        with pytest.raises(
+            ConfigurationError,
+            match="Must provide either 'config', 'config_file', or both 'db_url' and 'modules'",
+        ):
+            TortoiseConfig.resolve_args()
+        with pytest.raises(
+            ConfigurationError,
+            match="Must provide either 'config', 'config_file', or both 'db_url' and 'modules'",
+        ):
+            TortoiseConfig.resolve_args(db_url="")
+        with pytest.raises(
+            ConfigurationError, match="Cannot specify both 'config' and 'config_file'"
+        ):
+            TortoiseConfig.resolve_args(config={}, config_file="a.json")
+        db_url = "sqlite://db.sqlite3"
+        config = {
+            "connections": {"default": db_url},
+            "apps": {
+                "app": {
+                    "models": ["app.models"],
+                    "default_connection": "default",
+                }
+            },
+        }
+        config_file = tmp_path / "config.json"
+        config_file.write_bytes(orjson.dumps(config))
+        typed_config = TortoiseConfig.resolve_args(config)
+        assert typed_config == TortoiseConfig.resolve_args(config_file=config_file)
+
+        typed_config_2 = TortoiseConfig.resolve_args(db_url=db_url, modules={"app": ["app.models"]})
+        assert typed_config.apps == typed_config_2.apps
+        assert (
+            expand_db_url(str(typed_config.connections["default"].to_config()))
+            == typed_config_2.connections["default"].to_config()
+        )
