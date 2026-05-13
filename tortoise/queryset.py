@@ -80,6 +80,8 @@ class QuerySetSingle(Protocol[T_co]):
         self, *args: str, **kwargs: str
     ) -> ValuesQuery[Literal[True]]: ...  # pragma: nocoverage
 
+    def sql(self, params_inline=False) -> str: ...  # pragma: nocoverage
+
 
 class _ChooseDBMixin(Generic[MODEL]):
     _db: BaseDBAsyncClient | None
