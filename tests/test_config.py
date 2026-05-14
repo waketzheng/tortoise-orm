@@ -14,51 +14,54 @@ from tortoise.exceptions import ConfigurationError
 
 
 class TestTortoiseConfig:
-    def test_from_invalid_dict(self):
-        with pytest.raises(
-            ConfigurationError, match="TortoiseConfig must be created from a mapping"
-        ):
-            TortoiseConfig.from_dict([])
-        with pytest.raises(ConfigurationError, match='Config must define "connections" section'):
-            TortoiseConfig.from_dict({})
-        with pytest.raises(ConfigurationError, match='Config must define "apps" section'):
-            TortoiseConfig.from_dict({"connections": ""})
-        with pytest.raises(ConfigurationError, match='Config "connections" must be a mapping'):
-            TortoiseConfig.from_dict({"connections": "", "apps": ""})
-        with pytest.raises(ConfigurationError, match="Connection values must be mapping or string"):
-            TortoiseConfig.from_dict({"connections": {"default": []}, "apps": ""})
-        with pytest.raises(ConfigurationError, match="DBUrlConfig.url must be a non-empty string"):
-            TortoiseConfig.from_dict({"connections": {"default": ""}, "apps": ""})
-        with pytest.raises(ConfigurationError, match='Config "apps" must be a mapping'):
-            TortoiseConfig.from_dict({"connections": {"default": "db.sqlite3"}, "apps": ""})
-        with pytest.raises(ConfigurationError, match="App values must be mappings"):
-            TortoiseConfig.from_dict(
-                {"connections": {"default": "db.sqlite3"}, "apps": {"auth": ""}}
-            )
-        with pytest.raises(ConfigurationError, match='AppConfig requires "models"'):
-            TortoiseConfig.from_dict(
-                {"connections": {"default": "db.sqlite3"}, "apps": {"auth": {}}, "routers": {}}
-            )
-        with pytest.raises(
-            ConfigurationError, match="AppConfig.models must be a non-empty list of strings"
-        ):
-            TortoiseConfig.from_dict(
+    @pytest.mark.parametrize(
+        "config,msg",
+        [
+            ([], "TortoiseConfig must be created from a mapping"),
+            ({}, 'Config must define "connections" section'),
+            ({"connections": ""}, 'Config must define "apps" section'),
+            ({"connections": "", "apps": ""}, 'Config "connections" must be a mapping'),
+            (
+                {"connections": {"default": []}, "apps": ""},
+                "Connection values must be mapping or string",
+            ),
+            (
+                {"connections": {"default": ""}, "apps": ""},
+                "DBUrlConfig.url must be a non-empty string",
+            ),
+            (
+                {"connections": {"default": "db.sqlite3"}, "apps": ""},
+                'Config "apps" must be a mapping',
+            ),
+            (
+                {"connections": {"default": "db.sqlite3"}, "apps": {"auth": ""}},
+                "App values must be mappings",
+            ),
+            (
+                {"connections": {"default": "db.sqlite3"}, "apps": {"auth": {}}, "routers": {}},
+                'AppConfig requires "models"',
+            ),
+            (
                 {
                     "connections": {"default": "db.sqlite3"},
                     "apps": {"auth": {"models": []}},
                     "routers": {},
-                }
-            )
-        with pytest.raises(
-            ConfigurationError, match="TortoiseConfig.routers must be a list or None"
-        ):
-            TortoiseConfig.from_dict(
+                },
+                "AppConfig.models must be a non-empty list of strings",
+            ),
+            (
                 {
                     "connections": {"default": "db.sqlite3"},
                     "apps": {"auth": {"models": ["models"]}},
                     "routers": "",
-                }
-            )
+                },
+                "TortoiseConfig.routers must be a list or None",
+            ),
+        ],
+    )
+    def test_from_invalid_dict(self, config: list | dict, msg: str):
+        with pytest.raises(ConfigurationError, match=msg):
+            TortoiseConfig.from_dict(config)  # type: ignore
 
     def test_from_dict(self):
         simple = {
@@ -129,21 +132,25 @@ class TestTortoiseConfig:
         assert typed_config == TortoiseConfig.resolve_args(db_url=db_url, modules=modules)
         assert typed_config.apps == TortoiseConfig.from_dict(simple).apps
 
+    @pytest.mark.parametrize(
+        "config,msg",
+        [
+            ({}, "Must provide either 'config', 'config_file', or both 'db_url' and 'modules'"),
+            (
+                dict(db_url=""),
+                "Must provide either 'config', 'config_file', or both 'db_url' and 'modules'",
+            ),
+            (
+                dict(config={}, config_file="a.json"),
+                "Cannot specify both 'config' and 'config_file'",
+            ),
+        ],
+    )
+    def test_resolve_args_invalid(self, config: dict, msg: str):
+        with pytest.raises(ConfigurationError, match=msg):
+            TortoiseConfig.resolve_args(**config)
+
     def test_resolve_args(self, tmp_path: Path):
-        with pytest.raises(
-            ConfigurationError,
-            match="Must provide either 'config', 'config_file', or both 'db_url' and 'modules'",
-        ):
-            TortoiseConfig.resolve_args()
-        with pytest.raises(
-            ConfigurationError,
-            match="Must provide either 'config', 'config_file', or both 'db_url' and 'modules'",
-        ):
-            TortoiseConfig.resolve_args(db_url="")
-        with pytest.raises(
-            ConfigurationError, match="Cannot specify both 'config' and 'config_file'"
-        ):
-            TortoiseConfig.resolve_args(config={}, config_file="a.json")
         db_url = "sqlite://db.sqlite3"
         config = {
             "connections": {"default": db_url},
