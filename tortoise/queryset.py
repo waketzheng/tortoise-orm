@@ -822,6 +822,31 @@ class QuerySet(AwaitableQuery[MODEL]):
             use_indexes=self._use_indexes,
         )
 
+    def contains(self, obj: MODEL) -> ContainsQuery:
+        """
+        Check if the QuerySet contains the given instance.
+
+        :param obj: The model instance to check for.
+        :return: True if the QuerySet contains the instance, False otherwise.
+        """
+
+        if not isinstance(obj, self.model):
+            raise ParamsError("The given object is not an instance of the queryset's model.")
+
+        if not obj.pk:
+            raise ParamsError("The given object does not have a primary key.")
+
+        return ContainsQuery(
+            db=self._db,
+            model=self.model,
+            q_objects=self._q_objects,
+            annotations=self._annotations,
+            custom_filters=self._custom_filters,
+            force_indexes=self._force_indexes,
+            use_indexes=self._use_indexes,
+            obj=obj,
+        )
+
     def all(self) -> QuerySet[MODEL]:
         """
         Return the whole QuerySet.
@@ -1471,6 +1496,22 @@ class ExistsQuery(AwaitableQuery):
     ) -> bool:
         result, _ = await self._db.execute_query(*self.query.get_parameterized_sql())
         return bool(result)
+
+
+class ContainsQuery(ExistsQuery):
+    def __init__(
+        self,
+        obj: MODEL,
+        **kwargs,
+    ) -> None:
+        super().__init__(**kwargs)
+        self._obj = obj
+
+    def _make_query(self) -> None:
+        super()._make_query()
+        pk_field = Field(self.model._meta.db_pk_column)
+        pk_value = self.model._meta.pk.to_db_value(self._obj.pk, self._obj)
+        self.query = self.query.where(pk_field.eq(pk_value))
 
 
 class CountQuery(AwaitableQuery):

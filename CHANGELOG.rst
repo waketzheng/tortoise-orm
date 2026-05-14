@@ -14,6 +14,7 @@ Changelog
 Added
 ^^^^^
 - ``QuerySet.union()`` — SQL UNION query support for combining results from multiple QuerySets, including support for union across different models, ``union(all=True)`` for duplicates, ``order_by()``, ``limit()``, and ``count()``.
+- ``QuerySet.contains()`` method to check if an object exists in a queryset.
 - Added comprehensive EXPLAIN support for MySQL and PostgreSQL.
 
 Fixed
