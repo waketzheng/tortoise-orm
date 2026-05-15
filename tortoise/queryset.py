@@ -822,6 +822,31 @@ class QuerySet(AwaitableQuery[MODEL]):
             use_indexes=self._use_indexes,
         )
 
+    def contains(self, obj: MODEL) -> ContainsQuery:
+        """
+        Check if the QuerySet contains the given instance.
+
+        :param obj: The model instance to check for.
+        :return: True if the QuerySet contains the instance, False otherwise.
+        """
+
+        if not isinstance(obj, self.model):
+            raise ParamsError("The given object is not an instance of the queryset's model.")
+
+        if not obj.pk:
+            raise ParamsError("The given object does not have a primary key.")
+
+        return ContainsQuery(
+            db=self._db,
+            model=self.model,
+            q_objects=self._q_objects,
+            annotations=self._annotations,
+            custom_filters=self._custom_filters,
+            force_indexes=self._force_indexes,
+            use_indexes=self._use_indexes,
+            obj=obj,
+        )
+
     def all(self) -> QuerySet[MODEL]:
         """
         Return the whole QuerySet.
@@ -1056,25 +1081,32 @@ class QuerySet(AwaitableQuery[MODEL]):
                 queryset._prefetch_map[first_level_field].add(forwarded_prefetch)
         return queryset
 
-    async def explain(self) -> Any:
+    async def explain(self, output_fmt: str | None = None, **options: bool) -> Any:
         """Fetch and return information about the query execution plan.
 
         This is done by executing an ``EXPLAIN`` query whose exact prefix depends
         on the database backend, as documented below.
 
-        - PostgreSQL: ``EXPLAIN (FORMAT JSON, VERBOSE) ...``
-        - SQLite: ``EXPLAIN QUERY PLAN ...``
-        - MySQL: ``EXPLAIN FORMAT=JSON ...``
+        :param output_fmt: The output format for the EXPLAIN result.
+            - PostgreSQL: ``text``, ``json``, ``xml``, ``yaml`` (default: ``json``)
+            - MySQL: ``json``, ``traditional``, ``tree`` (default: ``json``)
+            - SQLite, MSSQL, Oracle: Not supported (raises UnSupportedError)
+        :param options: Additional options for EXPLAIN (database-specific).
+            - PostgreSQL: ``analyze``, ``buffers``, ``costs``, ``memory``, ``settings``, ``summary``, ``timing``, ``verbose``, ``wal``, ``generic_plan``, ``serialize`` (if not provided default is ``verbose``)
+            - MySQL: ``analyze``
+            - SQLite, MSSQL, Oracle: Not supported (raises UnSupportedError)
 
         .. note::
             This is only meant to be used in an interactive environment for debugging
             and query optimization.
             **The output format may (and will) vary greatly depending on the database backend.**
+
+        :raises UnSupportedError: If the database does not support the requested format or options.
         """
         self._choose_db_if_not_chosen()
         self._make_query()
         return await self._db.executor_class(model=self.model, db=self._db).execute_explain(
-            self.query.get_sql()
+            self.query.get_sql(), output_fmt, **options
         )
 
     def using_db(self, _db: BaseDBAsyncClient | None) -> QuerySet[MODEL]:
@@ -1464,6 +1496,22 @@ class ExistsQuery(AwaitableQuery):
     ) -> bool:
         result, _ = await self._db.execute_query(*self.query.get_parameterized_sql())
         return bool(result)
+
+
+class ContainsQuery(ExistsQuery):
+    def __init__(
+        self,
+        obj: MODEL,
+        **kwargs,
+    ) -> None:
+        super().__init__(**kwargs)
+        self._obj = obj
+
+    def _make_query(self) -> None:
+        super()._make_query()
+        pk_field = Field(self.model._meta.db_pk_column)
+        pk_value = self.model._meta.pk.to_db_value(self._obj.pk, self._obj)
+        self.query = self.query.where(pk_field.eq(pk_value))
 
 
 class CountQuery(AwaitableQuery):

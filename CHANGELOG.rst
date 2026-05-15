@@ -11,6 +11,13 @@ Changelog
 1.1.8
 -----
 
+Added
+^^^^^
+- ``QuerySet.union()`` — SQL UNION query support for combining results from multiple QuerySets, including support for union across different models, ``union(all=True)`` for duplicates, ``order_by()``, ``limit()``, and ``count()``.
+- ``QuerySet.contains()`` method to check if an object exists in a queryset.
+- Added comprehensive EXPLAIN support for MySQL and PostgreSQL.
+- Built-in ``DomainNameValidator``, ``URLValidator``, and ``EmailValidator`` classes for common validation patterns. (#2162)
+
 Fixed
 ^^^^^
 - ``MigrationRecorder`` now uses parameterized queries; fixes MariaDB/MySQL rejecting ISO-8601 ``applied_at`` values. (#2132)
