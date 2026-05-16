@@ -92,10 +92,10 @@ class ImportManager:
             lines.append(f"from {module} import {', '.join(sorted(names))}")
         if self.uses_fields_module:
             from_import = "from tortoise import "
-            for i, line in enumerate(lines):
+            for idx, line in enumerate(lines):
                 if line.startswith(from_import):
                     imported = [i.strip() for i in line[len(from_import) :].split(",")]
-                    lines[i] = from_import + ", ".join(sorted(["fields", *imported]))
+                    lines[idx] = from_import + ", ".join(sorted(["fields", *imported]))
                     break
             else:
                 lines.append("from tortoise import fields")
