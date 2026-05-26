@@ -8,7 +8,11 @@ from tortoise.connection import get_connections
 from tortoise.exceptions import ParamsError
 
 if TYPE_CHECKING:  # pragma: nocoverage
-    from tortoise.backends.base.client import BaseDBAsyncClient, TransactionContext
+    from tortoise.backends.base.client import (
+        BaseDBAsyncClient,
+        TransactionalDBClient,
+        TransactionContext,
+    )
 
 T = TypeVar("T")
 FuncType = Callable[..., T]
@@ -30,7 +34,7 @@ def _get_connection(connection_name: str | None) -> BaseDBAsyncClient:
     return connection
 
 
-def in_transaction(connection_name: str | None = None) -> TransactionContext:
+def in_transaction(connection_name: str | None = None) -> TransactionContext[TransactionalDBClient]:
     """
     Transaction context manager.
 

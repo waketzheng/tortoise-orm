@@ -7,6 +7,8 @@ from decimal import Decimal
 from enum import Enum, IntEnum
 from uuid import UUID
 
+from typing_extensions import assert_type
+
 from tortoise.fields.data import (
     BinaryField,
     BooleanField,
@@ -18,11 +20,13 @@ from tortoise.fields.data import (
     FloatField,
     IntEnumField,
     IntField,
+    TextField,
     TimeDeltaField,
     TimeField,
     UUIDField,
 )
 from tortoise.models import Model
+from tortoise.transactions import in_transaction
 
 
 class Status(IntEnum):
@@ -43,8 +47,13 @@ class InheretedFromIntField(IntField):
 
 class TypeTestModel(Model):
     # CharField fields
+    char_default = CharField(max_length=100)
     char_non_null = CharField(max_length=100, null=False)
     char_nullable = CharField(max_length=100, null=True)
+
+    # TextField fields
+    text_non_null = TextField(null=False)
+    text_nullable = TextField(null=True)
 
     # IntField fields
     int_non_null = IntField(null=False)
@@ -59,6 +68,7 @@ class TypeTestModel(Model):
     decimal_nullable = DecimalField(max_digits=10, decimal_places=2, null=True)
 
     # DatetimeField fields
+    datetime_default = DatetimeField()
     datetime_non_null = DatetimeField(null=False)
     datetime_nullable = DatetimeField(null=True)
 
@@ -99,18 +109,33 @@ class TypeTestModel(Model):
 
 def test_char_field_nullability() -> None:
     o = TypeTestModel(char_non_null="test", char_nullable="test")
+    assert_type(o.char_default, str)
+    assert_type(o.char_non_null, str)
+    assert_type(o.char_nullable, str | None)
     o.char_nullable = None
     o.char_non_null = "another test"
 
 
+def test_text_field_nullability() -> None:
+    o = TypeTestModel(char_non_null="test", text_non_null="test", text_nullable="test")
+    assert_type(o.text_non_null, str)
+    assert_type(o.text_nullable, str | None)
+    o.text_nullable = None
+    o.text_non_null = "another test"
+
+
 def test_int_field_nullability() -> None:
     o = TypeTestModel(char_non_null="test", int_non_null=42, int_nullable=42)
+    assert_type(o.int_non_null, int)
+    assert_type(o.int_nullable, int | None)
     o.int_nullable = None
     o.int_non_null = 100
 
 
 def test_bool_field_nullability() -> None:
     o = TypeTestModel(char_non_null="test", bool_non_null=True, bool_nullable=True)
+    assert_type(o.bool_non_null, bool)
+    assert_type(o.bool_nullable, bool | None)
     o.bool_nullable = None
     o.bool_non_null = False
 
@@ -119,6 +144,8 @@ def test_decimal_field_nullability() -> None:
     o = TypeTestModel(
         char_non_null="test", decimal_non_null=Decimal("10.50"), decimal_nullable=Decimal("10.50")
     )
+    assert_type(o.decimal_non_null, Decimal)
+    assert_type(o.decimal_nullable, Decimal | None)
     o.decimal_nullable = None
     o.decimal_non_null = Decimal("20.75")
 
@@ -126,6 +153,9 @@ def test_decimal_field_nullability() -> None:
 def test_datetime_field_nullability() -> None:
     now = datetime.now()
     o = TypeTestModel(char_non_null="test", datetime_non_null=now, datetime_nullable=now)
+    assert_type(o.datetime_default, datetime)
+    assert_type(o.datetime_non_null, datetime)
+    assert_type(o.datetime_nullable, datetime | None)
     o.datetime_nullable = None
     o.datetime_non_null = datetime(2024, 1, 1, 12, 0, 0)
 
@@ -133,6 +163,8 @@ def test_datetime_field_nullability() -> None:
 def test_date_field_nullability() -> None:
     today = date.today()
     o = TypeTestModel(char_non_null="test", date_non_null=today, date_nullable=today)
+    assert_type(o.date_non_null, date)
+    assert_type(o.date_nullable, date | None)
     o.date_nullable = None
     o.date_non_null = date(2024, 1, 1)
 
@@ -140,6 +172,8 @@ def test_date_field_nullability() -> None:
 def test_time_field_nullability() -> None:
     now_time = time(12, 0, 0)
     o = TypeTestModel(char_non_null="test", time_non_null=now_time, time_nullable=now_time)
+    assert_type(o.time_non_null, time)
+    assert_type(o.time_nullable, time | None)
     o.time_nullable = None
     o.time_non_null = time(15, 30, 0)
 
@@ -147,12 +181,16 @@ def test_time_field_nullability() -> None:
 def test_timedelta_field_nullability() -> None:
     delta = timedelta(days=1)
     o = TypeTestModel(char_non_null="test", timedelta_non_null=delta, timedelta_nullable=delta)
+    assert_type(o.timedelta_non_null, timedelta)
+    assert_type(o.timedelta_nullable, timedelta | None)
     o.timedelta_nullable = None
     o.timedelta_non_null = timedelta(days=2)
 
 
 def test_float_field_nullability() -> None:
     o = TypeTestModel(char_non_null="test", float_non_null=1.5, float_nullable=1.5)
+    assert_type(o.float_non_null, float)
+    assert_type(o.float_nullable, float | None)
     o.float_nullable = None
     o.float_non_null = 3.14
 
@@ -160,12 +198,16 @@ def test_float_field_nullability() -> None:
 def test_uuid_field_nullability() -> None:
     test_uuid = UUID("12345678-1234-5678-1234-567812345678")
     o = TypeTestModel(char_non_null="test", uuid_non_null=test_uuid, uuid_nullable=test_uuid)
+    assert_type(o.uuid_non_null, UUID)
+    assert_type(o.uuid_nullable, UUID | None)
     o.uuid_nullable = None
     o.uuid_non_null = UUID("87654321-4321-8765-4321-876543218765")
 
 
 def test_binary_field_nullability() -> None:
     o = TypeTestModel(char_non_null="test", binary_non_null=b"data", binary_nullable=b"data")
+    assert_type(o.binary_non_null, bytes)
+    assert_type(o.binary_nullable, bytes | None)
     o.binary_nullable = None
     o.binary_non_null = b"new data"
 
@@ -187,3 +229,8 @@ def test_inhereted_int_field() -> None:
     )
     o.inhereted_int_field_nullable = None
     o.inhereted_int_field_non_null = 100
+
+
+async def test_transaction_context_type() -> None:
+    async with in_transaction() as connection:
+        assert_type(connection.connection_name, str)

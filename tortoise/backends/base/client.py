@@ -189,7 +189,7 @@ class BaseDBAsyncClient(abc.ABC):
         """
         raise NotImplementedError()  # pragma: nocoverage
 
-    def _in_transaction(self) -> TransactionContext:
+    def _in_transaction(self) -> TransactionContext[TransactionalDBClient]:
         raise NotImplementedError()  # pragma: nocoverage
 
     async def execute_insert(self, query: str, values: list) -> Any:
@@ -319,7 +319,7 @@ class TransactionContext(Generic[T_conn]):
     async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None: ...
 
 
-class TransactionContextPooled(TransactionContext):
+class TransactionContextPooled(TransactionContext[TransactionalDBClient]):
     "A version of TransactionContext that uses a pool to acquire connections."
 
     __slots__ = ("client", "connection_name", "token", "_pool_init_lock")
@@ -362,7 +362,7 @@ class TransactionContextPooled(TransactionContext):
             get_connections().reset(self.token)
 
 
-class NestedTransactionContext(TransactionContext):
+class NestedTransactionContext(TransactionContext[TransactionalDBClient]):
     __slots__ = ("client", "connection_name")
 
     def __init__(self, client: TransactionalDBClient) -> None:

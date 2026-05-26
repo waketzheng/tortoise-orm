@@ -8,7 +8,7 @@ import warnings
 from collections.abc import Callable
 from decimal import Decimal
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, TypeVar, overload
 from uuid import UUID, uuid4
 
 from pypika_tortoise import functions
@@ -100,6 +100,29 @@ class IntField(Field[T_INT], int):
 
     SQL_TYPE = "INT"
     allows_generated = True
+
+    if TYPE_CHECKING:
+
+        @overload
+        def __new__(
+            cls,
+            primary_key: bool | None = None,
+            *,
+            null: Literal[False] = False,
+            **kwargs: Any,
+        ) -> IntField[int]: ...
+
+        @overload
+        def __new__(
+            cls,
+            primary_key: bool | None = None,
+            *,
+            null: Literal[True],
+            **kwargs: Any,
+        ) -> IntField[int | None]: ...
+
+        def __new__(cls, *args: Any, **kwargs: Any) -> Any:
+            return object.__new__(cls)
 
     @overload
     def __init__(
@@ -220,6 +243,21 @@ class CharField(Field[T_STR]):
 
     field_type = str
 
+    if TYPE_CHECKING:
+
+        @overload
+        def __new__(
+            cls, max_length: int, *, null: Literal[False] = False, **kwargs: Any
+        ) -> CharField[str]: ...
+
+        @overload
+        def __new__(
+            cls, max_length: int, *, null: Literal[True], **kwargs: Any
+        ) -> CharField[str | None]: ...
+
+        def __new__(cls, *args: Any, **kwargs: Any) -> Any:
+            return object.__new__(cls)
+
     @overload
     def __init__(
         self: CharField[str], max_length: int, *, null: Literal[False] = False, **kwargs: Any
@@ -256,13 +294,62 @@ class CharField(Field[T_STR]):
             return f"NVARCHAR2({self.field.max_length})"
 
 
-class TextField(Field[str], str):  # type: ignore
+class TextField(Field[T_STR], str):  # type: ignore
     """
     Large Text field.
     """
 
     indexable = False
     SQL_TYPE = "TEXT"
+
+    if TYPE_CHECKING:
+
+        @overload
+        def __new__(
+            cls,
+            primary_key: bool | None = None,
+            unique: bool = False,
+            db_index: bool = False,
+            *,
+            null: Literal[False] = False,
+            **kwargs: Any,
+        ) -> TextField[str]: ...
+
+        @overload
+        def __new__(
+            cls,
+            primary_key: bool | None = None,
+            unique: bool = False,
+            db_index: bool = False,
+            *,
+            null: Literal[True],
+            **kwargs: Any,
+        ) -> TextField[str | None]: ...
+
+        def __new__(cls, *args: Any, **kwargs: Any) -> Any:
+            return object.__new__(cls)
+
+    @overload
+    def __init__(
+        self: TextField[str],
+        primary_key: bool | None = None,
+        unique: bool = False,
+        db_index: bool = False,
+        *,
+        null: Literal[False] = False,
+        **kwargs: Any,
+    ) -> None: ...
+
+    @overload
+    def __init__(
+        self: TextField[str | None],
+        primary_key: bool | None = None,
+        unique: bool = False,
+        db_index: bool = False,
+        *,
+        null: Literal[True],
+        **kwargs: Any,
+    ) -> None: ...
 
     def __init__(
         self,
@@ -313,6 +400,17 @@ class BooleanField(Field[T_BOOL]):
     field_type = bool
     SQL_TYPE = "BOOL"
 
+    if TYPE_CHECKING:
+
+        @overload
+        def __new__(cls, *, null: Literal[False] = False, **kwargs: Any) -> BooleanField[bool]: ...
+
+        @overload
+        def __new__(cls, *, null: Literal[True], **kwargs: Any) -> BooleanField[bool | None]: ...
+
+        def __new__(cls, *args: Any, **kwargs: Any) -> Any:
+            return object.__new__(cls)
+
     @overload
     def __init__(
         self: BooleanField[bool], *, null: Literal[False] = False, **kwargs: Any
@@ -349,6 +447,31 @@ class DecimalField(Field[T_DECIMAL], Decimal):  # type: ignore
     """
 
     skip_to_python_if_native = True
+
+    if TYPE_CHECKING:
+
+        @overload
+        def __new__(
+            cls,
+            max_digits: int,
+            decimal_places: int,
+            *,
+            null: Literal[False] = False,
+            **kwargs: Any,
+        ) -> DecimalField[Decimal]: ...
+
+        @overload
+        def __new__(
+            cls,
+            max_digits: int,
+            decimal_places: int,
+            *,
+            null: Literal[True],
+            **kwargs: Any,
+        ) -> DecimalField[Decimal | None]: ...
+
+        def __new__(cls, *args: Any, **kwargs: Any) -> Any:
+            return object.__new__(cls)
 
     @overload
     def __init__(
@@ -403,7 +526,7 @@ class DecimalField(Field[T_DECIMAL], Decimal):  # type: ignore
 DatetimeFieldQueryValueType = TypeVar(
     "DatetimeFieldQueryValueType", datetime.datetime, int, float, str
 )
-DateFieldQueryValueType = TypeVar("DateFieldQueryValueType", datetime.date, int, float, str)
+DateFieldQueryValueType: TypeAlias = datetime.date | int | float | str
 
 
 class DatetimeField(Field[T_DATETIME], datetime.datetime):
@@ -432,6 +555,31 @@ class DatetimeField(Field[T_DATETIME], datetime.datetime):
 
     class _db_oracle:
         SQL_TYPE = "TIMESTAMP WITH TIME ZONE"
+
+    if TYPE_CHECKING:
+
+        @overload
+        def __new__(
+            cls,
+            auto_now: bool = False,
+            auto_now_add: bool = False,
+            *,
+            null: Literal[False] = False,
+            **kwargs: Any,
+        ) -> DatetimeField[datetime.datetime]: ...
+
+        @overload
+        def __new__(
+            cls,
+            auto_now: bool = False,
+            auto_now_add: bool = False,
+            *,
+            null: Literal[True],
+            **kwargs: Any,
+        ) -> DatetimeField[datetime.datetime | None]: ...
+
+        def __new__(cls, *args: Any, **kwargs: Any) -> Any:
+            return object.__new__(cls)
 
     @overload
     def __init__(
@@ -528,6 +676,21 @@ class DateField(Field[T_DATE], datetime.date):
     skip_to_python_if_native = True
     SQL_TYPE = "DATE"
 
+    if TYPE_CHECKING:
+
+        @overload
+        def __new__(
+            cls, *, null: Literal[False] = False, **kwargs: Any
+        ) -> DateField[datetime.date]: ...
+
+        @overload
+        def __new__(
+            cls, *, null: Literal[True], **kwargs: Any
+        ) -> DateField[datetime.date | None]: ...
+
+        def __new__(cls, *args: Any, **kwargs: Any) -> Any:
+            return object.__new__(cls)
+
     @overload
     def __init__(
         self: DateField[datetime.date], *, null: Literal[False] = False, **kwargs: Any
@@ -551,7 +714,7 @@ class DateField(Field[T_DATE], datetime.date):
     ) -> DateFieldQueryValueType | None:
         if value is not None and isinstance(value, str) and len(value) > 4:
             with contextlib.suppress(ValueError):
-                value = parse_datetime(value).date()  # type: ignore[assignment]
+                value = parse_datetime(value).date()
         self.validate(value)
         return value
 
@@ -566,6 +729,31 @@ class TimeField(Field[T_TIME], datetime.time):
 
     class _db_oracle:
         SQL_TYPE = "NVARCHAR2(8)"
+
+    if TYPE_CHECKING:
+
+        @overload
+        def __new__(
+            cls,
+            auto_now: bool = False,
+            auto_now_add: bool = False,
+            *,
+            null: Literal[False] = False,
+            **kwargs: Any,
+        ) -> TimeField[datetime.time]: ...
+
+        @overload
+        def __new__(
+            cls,
+            auto_now: bool = False,
+            auto_now_add: bool = False,
+            *,
+            null: Literal[True],
+            **kwargs: Any,
+        ) -> TimeField[datetime.time | None]: ...
+
+        def __new__(cls, *args: Any, **kwargs: Any) -> Any:
+            return object.__new__(cls)
 
     @overload
     def __init__(
@@ -652,6 +840,21 @@ class TimeDeltaField(Field[T_TIMEDELTA]):
     field_type = datetime.timedelta
     SQL_TYPE = "BIGINT"
 
+    if TYPE_CHECKING:
+
+        @overload
+        def __new__(
+            cls, *, null: Literal[False] = False, **kwargs: Any
+        ) -> TimeDeltaField[datetime.timedelta]: ...
+
+        @overload
+        def __new__(
+            cls, *, null: Literal[True], **kwargs: Any
+        ) -> TimeDeltaField[datetime.timedelta | None]: ...
+
+        def __new__(cls, *args: Any, **kwargs: Any) -> Any:
+            return object.__new__(cls)
+
     @overload
     def __init__(
         self: TimeDeltaField[datetime.timedelta], *, null: Literal[False] = False, **kwargs: Any
@@ -689,6 +892,17 @@ class FloatField(Field[T_FLOAT], float):
     """
 
     SQL_TYPE = "DOUBLE PRECISION"
+
+    if TYPE_CHECKING:
+
+        @overload
+        def __new__(cls, *, null: Literal[False] = False, **kwargs: Any) -> FloatField[float]: ...
+
+        @overload
+        def __new__(cls, *, null: Literal[True], **kwargs: Any) -> FloatField[float | None]: ...
+
+        def __new__(cls, *args: Any, **kwargs: Any) -> Any:
+            return object.__new__(cls)
 
     @overload
     def __init__(
@@ -819,6 +1033,17 @@ class UUIDField(Field[T_UUID], UUID):
     class _db_postgres:
         SQL_TYPE = "UUID"
 
+    if TYPE_CHECKING:
+
+        @overload
+        def __new__(cls, *, null: Literal[False] = False, **kwargs: Any) -> UUIDField[UUID]: ...
+
+        @overload
+        def __new__(cls, *, null: Literal[True], **kwargs: Any) -> UUIDField[UUID | None]: ...
+
+        def __new__(cls, *args: Any, **kwargs: Any) -> Any:
+            return object.__new__(cls)
+
     @overload
     def __init__(self: UUIDField[UUID], *, null: Literal[False] = False, **kwargs: Any) -> None: ...
 
@@ -849,6 +1074,17 @@ class BinaryField(Field[T_BINARY], bytes):  # type: ignore
 
     indexable = False
     SQL_TYPE = "BLOB"
+
+    if TYPE_CHECKING:
+
+        @overload
+        def __new__(cls, *, null: Literal[False] = False, **kwargs: Any) -> BinaryField[bytes]: ...
+
+        @overload
+        def __new__(cls, *, null: Literal[True], **kwargs: Any) -> BinaryField[bytes | None]: ...
+
+        def __new__(cls, *args: Any, **kwargs: Any) -> Any:
+            return object.__new__(cls)
 
     @overload
     def __init__(
