@@ -60,6 +60,30 @@ async def test_exists(db, intfields_data):
 
 
 @pytest.mark.asyncio
+async def test_contains(db, intfields_data):
+    obj = await IntFields.filter(intnum=10).first()
+    assert await IntFields.all().contains(obj)
+
+    assert await IntFields.filter(intnum__lt=50).contains(obj)
+
+    assert not await IntFields.filter(intnum__gt=50).contains(obj)
+
+
+@pytest.mark.asyncio
+async def test_contains_when_no_pk(db, intfields_data):
+    with pytest.raises(ParamsError, match="The given object does not have a primary key."):
+        await IntFields.all().contains(IntFields(intnum=99))
+
+
+@pytest.mark.asyncio
+async def test_contains_with_wrong_model(db, intfields_data):
+    with pytest.raises(
+        ParamsError, match="The given object is not an instance of the queryset's model."
+    ):
+        await IntFields.all().contains(Tournament(name="test"))
+
+
+@pytest.mark.asyncio
 async def test_limit_count(db, intfields_data):
     assert await IntFields.all().limit(10).count() == 10
 
