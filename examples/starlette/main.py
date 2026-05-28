@@ -1,6 +1,8 @@
+#!/usr/bin/env python
 # pylint: disable=E0401,E0611
 import logging
 from json import JSONDecodeError
+from pathlib import Path
 
 from models import Users
 from starlette.applications import Starlette
@@ -52,4 +54,4 @@ register_tortoise(
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("__main__:app", reload=True)
+    uvicorn.run("__main__:app", reload=True, reload_dirs=[str(Path(__file__).parent)])

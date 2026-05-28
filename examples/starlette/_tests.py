@@ -16,6 +16,11 @@ except ImportError:
     raise
 
 
+@pytest.fixture(scope="module")
+def anyio_backend() -> str:
+    return "asyncio"
+
+
 @pytest.mark.anyio
 async def test_app() -> None:
     async with LifespanManager(app):
@@ -25,14 +30,14 @@ async def test_app() -> None:
             r = await client.get("/")
             assert r.status_code == 200
             assert r.json() == {"users": []}
-            (await Users.all()) == []
+            assert await Users.all() == []
 
             r = await client.post("/user/", json={"username": "Iron"})
             assert r.status_code == 201
             assert r.json() == {"user": "Users(id=1, username='Iron')"}
-            await Users.get(id=1) == await Users.last()
+            assert await Users.get(id=1) == await Users.last()
 
             r = await client.get("/")
             assert r.status_code == 200
             assert r.json() == {"users": ["User 1: Iron"]}
-            (await Users.all()) == [await Users.first()]
+            assert await Users.all() == [await Users.first()]
