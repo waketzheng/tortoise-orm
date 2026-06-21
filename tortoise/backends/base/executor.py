@@ -7,7 +7,7 @@ from collections.abc import Callable, Iterable, Sequence
 from copy import copy
 from typing import TYPE_CHECKING, Any, cast
 
-from pypika_tortoise import JoinType, Parameter, Table
+from pypika_tortoise import Parameter, Table
 from pypika_tortoise.queries import QueryBuilder
 
 from tortoise.exceptions import OperationalError, UnSupportedError
@@ -19,7 +19,6 @@ from tortoise.fields.relational import (
     ManyToManyFieldInstance,
     RelationalField,
 )
-from tortoise.query_utils import QueryModifier
 
 if TYPE_CHECKING:  # pragma: nocoverage
     from tortoise.backends.base.client import BaseDBAsyncClient
@@ -115,6 +114,15 @@ class BaseExecutor:
         custom_fields: list | None = None,
     ) -> list:
         _, raw_results = await self.db.execute_query(sql, values)
+        instance_list = await self._init_from_raw_results(raw_results, custom_fields)
+        await self._execute_prefetch_queries(instance_list)
+        return instance_list
+
+    async def _init_from_raw_results(
+        self,
+        raw_results: Iterable[dict],
+        custom_fields: list | None = None,
+    ) -> list:
         instance_list = []
         if self.select_related_idx:
             _split_cache: dict[str, str] = {}
@@ -159,7 +167,6 @@ class BaseExecutor:
                 for field in custom_fields:
                     object.__setattr__(instance, field, row[field])
             instance_list.append(instance)
-        await self._execute_prefetch_queries(instance_list)
         return instance_list
 
     async def execute_union(
@@ -603,14 +610,22 @@ class BaseExecutor:
         related_query: tuple[str | None, QuerySet],
     ) -> Iterable[Model]:
         to_attr, related_query = related_query
+        field_object: ManyToManyFieldInstance = self.model._meta.fields_map[field]  # type: ignore
+
+        related_pk_field = related_query.model._meta.pk
+        related_pk_field_name = related_pk_field.model_field_name
+        if (
+            related_query._fields_for_select
+            and related_pk_field_name not in related_query._fields_for_select
+        ):
+            related_query = related_query.only(
+                *related_query._fields_for_select, related_pk_field_name
+            )
+
         instance_id_set: set = {
             instance._meta.pk.to_db_value(instance.pk, instance) for instance in instance_list
         }
-
-        field_object: ManyToManyFieldInstance = self.model._meta.fields_map[field]  # type: ignore
-
         through_table = Table(field_object.through, schema=field_object.through_schema)
-
         subquery = (
             self.db.query_class.from_(through_table)
             .select(
@@ -621,56 +636,43 @@ class BaseExecutor:
         )
 
         related_query_table = related_query.model._meta.basetable
-        related_pk_field = related_query.model._meta.db_pk_column
-        related_query.resolve_ordering(related_query.model, related_query_table, [], {})
+        related_query._make_query()
+        backward_relation_key = subquery._backward_relation_key
         query = (
             related_query.query.join(subquery)
-            .on(subquery._forward_relation_key == related_query_table[related_pk_field])
-            .select(
-                subquery._backward_relation_key.as_("_backward_relation_key"),
-                *[related_query_table[field].as_(field) for field in related_query.fields],
+            .on(
+                subquery._forward_relation_key
+                == related_query_table[related_query.model._meta.db_pk_column]
             )
+            .select(backward_relation_key.as_("_backward_relation_key"))
         )
-
-        if related_query._q_objects:
-            joined_tables: list[Table] = []
-            modifier = QueryModifier()
-            for node in related_query._q_objects:
-                modifier &= node.resolve(
-                    ResolveContext(
-                        model=related_query.model,
-                        table=related_query_table,
-                        annotations=related_query._annotations,
-                        custom_filters=related_query._custom_filters,
-                    )
-                )
-
-            for join in modifier.joins:
-                if join[0] not in joined_tables:
-                    query = query.join(join[0], how=JoinType.left_outer).on(join[1])
-                    joined_tables.append(join[0])
-
-            if modifier.where_criterion:
-                query = query.where(modifier.where_criterion)
-
-            if modifier.having_criterion:
-                query = query.having(modifier.having_criterion)
+        if query._groupbys:
+            query = query.groupby(backward_relation_key)
 
         _, raw_results = await self.db.execute_query(*query.get_parameterized_sql())
         relations: list[tuple[Any, Any]] = []
-        related_object_list: list[Model] = []
-        model_pk, related_pk = self.model._meta.pk, field_object.related_model._meta.pk
-        for e in raw_results:
-            pk_values: tuple[Any, Any] = (
-                model_pk.to_python_value(e["_backward_relation_key"]),
-                related_pk.to_python_value(e[related_pk_field]),
+        model_pk = self.model._meta.pk
+        related_executor = self.__class__(
+            model=related_query.model,
+            db=self.db,
+            prefetch_map=related_query._prefetch_map,
+            prefetch_queries=related_query._prefetch_queries,
+            select_related_idx=related_query._select_related_idx,  # type: ignore[arg-type]
+        )
+        related_object_list = await related_executor._init_from_raw_results(
+            raw_results, list(related_query._annotations.keys())
+        )
+        if related_query._prefetch_map or related_query._prefetch_queries:
+            await related_executor._execute_prefetch_queries(related_object_list)
+        related_object_map = {}
+        for row, related_object in zip(raw_results, related_object_list):
+            relations.append(
+                (
+                    model_pk.to_python_value(row["_backward_relation_key"]),
+                    related_object.pk,
+                )
             )
-            relations.append(pk_values)
-            related_object_list.append(related_query.model._init_from_db(**e))
-        await self.__class__(
-            model=related_query.model, db=self.db, prefetch_map=related_query._prefetch_map
-        )._execute_prefetch_queries(related_object_list)
-        related_object_map = {e.pk: e for e in related_object_list}
+            related_object_map[related_object.pk] = related_object
         relation_map: dict[str, list] = {}
 
         for object_id, related_object_id in relations:
