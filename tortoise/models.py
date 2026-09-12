@@ -69,10 +69,10 @@ def get_together(meta: Model.Meta, together: str) -> tuple[tuple[str, ...], ...]
     _together = getattr(meta, together, ())
 
     if _together and isinstance(_together, (list, tuple)) and isinstance(_together[0], str):
-        _together = (_together,)
+        _together = (tuple(_together),)
 
     # return without validation, validation will be done further in the code
-    return _together  # type:ignore
+    return _together
 
 
 def prepare_default_ordering(meta: Model.Meta) -> tuple[tuple[str, Order], ...]:
@@ -609,19 +609,18 @@ class ModelMeta(type):
     def _parse_custom_pk(attrs: dict, pk_attr: str, name: str, is_abstract) -> tuple[dict, str]:
         custom_pk_present = False
         for key, value in attrs.items():
-            if isinstance(value, Field):
-                if value.pk:
-                    if custom_pk_present:
-                        raise ConfigurationError(
-                            f"Can't create model {name} with two primary keys,"
-                            " only single primary key is supported"
-                        )
-                    if value.generated and not value.allows_generated:
-                        raise ConfigurationError(
-                            f"Field '{key}' ({value.__class__.__name__}) can't be DB-generated"
-                        )
-                    custom_pk_present = True
-                    pk_attr = key
+            if isinstance(value, Field) and value.pk:
+                if custom_pk_present:
+                    raise ConfigurationError(
+                        f"Can't create model {name} with two primary keys,"
+                        " only single primary key is supported"
+                    )
+                if value.generated and not value.allows_generated:
+                    raise ConfigurationError(
+                        f"Field '{key}' ({value.__class__.__name__}) can't be DB-generated"
+                    )
+                custom_pk_present = True
+                pk_attr = key
 
         if not custom_pk_present and not is_abstract:
             if "id" not in attrs:
@@ -722,7 +721,7 @@ class ModelMeta(type):
             meta.abstract = True
         return meta
 
-    def __getitem__(cls: type[MODEL], key: Any) -> QuerySetSingle[MODEL]:  # type: ignore
+    def __getitem__(cls: type[MODEL], key: Any) -> QuerySetSingle[MODEL]:  # type: ignore[misc]
         return cls._getbypk(key)  # type: ignore
 
 
@@ -833,7 +832,7 @@ class Model(metaclass=ModelMeta):
             #  We want to avoid conditionals and calling .to_python_value()
             # Native fields are fields that are already converted to/from python to DB type
             #  by the DB driver
-            for key, model_field, field in meta.db_native_fields:
+            for key, model_field, _field in meta.db_native_fields:
                 _setattr(self, model_field, kwargs[key])
             # Fields that don't override .to_python_value() are converted without a call
             #  as we already know what we will be doing.
@@ -921,8 +920,8 @@ class Model(metaclass=ModelMeta):
     async def _getbypk(cls: type[MODEL], key: Any) -> MODEL:
         try:
             return await cls.get(pk=key)
-        except (DoesNotExist, ValueError):
-            raise ObjectDoesNotExistError(cls, cls._meta.pk_attr, key)
+        except (DoesNotExist, ValueError) as e:
+            raise ObjectDoesNotExistError(cls, cls._meta.pk_attr, key) from e
 
     def clone(self: MODEL, pk: Any = EMPTY) -> MODEL:
         """
@@ -1028,17 +1027,15 @@ class Model(metaclass=ModelMeta):
                 # FK/O2O: store at _{key} for property getter, also set source field
                 _setattr(self, f"_{key}", value)
                 fk_field = meta.fields_map[key]
-                if (
-                    hasattr(fk_field, "to_field_instance")
-                    and fk_field.to_field_instance is not None
-                ):
+                to_field_instance = getattr(fk_field, "to_field_instance", None)
+                if to_field_instance is not None:
                     source_field = fk_field.source_field
                     if source_field is not None:
                         if value is not None:
                             _setattr(
                                 self,
                                 source_field,
-                                getattr(value, fk_field.to_field_instance.model_field_name, None),
+                                getattr(value, to_field_instance.model_field_name, None),
                             )
                         else:
                             _setattr(self, source_field, None)
@@ -1268,10 +1265,7 @@ class Model(metaclass=ModelMeta):
         :param for_write: Whether this query for write.
         :return: BaseDBAsyncClient:
         """
-        if for_write:
-            db = router.db_for_write(cls)
-        else:
-            db = router.db_for_read(cls)
+        db = router.db_for_write(cls) if for_write else router.db_for_read(cls)
         return db or cls._meta.db
 
     @classmethod

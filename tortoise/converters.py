@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import datetime
 import time
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from datetime import timedelta
 from decimal import Decimal
-from typing import Any
+from typing import Any, overload
 
 _escape_table = [chr(x) for x in range(128)]
 _escape_table[0] = "\\0"
@@ -28,7 +28,23 @@ def _escape_unicode(value: str, mapping=None) -> str:
 escape_string = _escape_unicode
 
 
-def escape_item(val: Any, mapping=None) -> str:
+@overload
+def escape_item(val: str, mapping: Any = None) -> str: ...
+
+
+@overload
+def escape_item(val: dict) -> dict: ...
+
+
+@overload
+def escape_item(
+    val: Any, mapping: dict[type, Callable[..., str | dict]] | None = None
+) -> str | dict: ...
+
+
+def escape_item(
+    val: str | Any, mapping: dict[type, Callable[..., str | dict]] | None = None
+) -> str | dict:
     if isinstance(val, str):
         return f'"{val}"'
 
@@ -44,7 +60,7 @@ def escape_item(val: Any, mapping=None) -> str:
         except KeyError as exc:
             raise TypeError("no default type converter defined") from exc
 
-    return encoder(val, mapping)  # type:ignore
+    return encoder(val, mapping)
 
 
 def escape_dict(val: dict, mapping=None) -> dict:
@@ -132,7 +148,7 @@ def _convert_second_fraction(s) -> int:
     return int(s[:6])
 
 
-encoders = {
+encoders: dict[type, Callable[..., str | dict]] = {
     bool: escape_bool,
     int: escape_int,
     float: escape_float,

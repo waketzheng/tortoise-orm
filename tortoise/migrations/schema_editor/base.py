@@ -151,7 +151,7 @@ class BaseSchemaEditor(SchemaQuotingMixin):
 
         encoder = encoders.get(type(default))
         if encoder:
-            return str(encoder(default))  # type: ignore[operator]
+            return str(encoder(default))
         return repr(default)
 
     @staticmethod
