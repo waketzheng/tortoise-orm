@@ -46,11 +46,9 @@ def mysql_json_contained_by(field: Term, value_str: str) -> JSONContains | None:
     values = json.loads(value_str)
     contained_by = None
     for value in values:
-        if contained_by is None:
-            contained_by = JSONContains(field, ValueWrapper(json.dumps([value])))
-        else:
-            contained_by |= JSONContains(field, ValueWrapper(json.dumps([value])))  # type: ignore
-    return contained_by
+        c = JSONContains(field, ValueWrapper(json.dumps([value])))
+        contained_by = c if contained_by is None else (contained_by | c)
+    return contained_by  # type:ignore
 
 
 def _mysql_json_is_null(left: Term, is_null: bool) -> Criterion:

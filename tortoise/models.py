@@ -72,7 +72,7 @@ def get_together(meta: Model.Meta, together: str) -> tuple[tuple[str, ...], ...]
         _together = (_together,)
 
     # return without validation, validation will be done further in the code
-    return _together
+    return _together  # type:ignore
 
 
 def prepare_default_ordering(meta: Model.Meta) -> tuple[tuple[str, Order], ...]:
@@ -882,7 +882,7 @@ class Model(metaclass=ModelMeta):
             yield field, getattr(self, field)
 
     def __eq__(self, other: object) -> bool:
-        return type(other) is type(self) and self.pk == other.pk  # type: ignore
+        return type(other) is type(self) and self.pk == other.pk
 
     def _get_pk_val(self) -> Any:
         return getattr(self, self._meta.pk_attr, None)
