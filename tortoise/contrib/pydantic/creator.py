@@ -5,11 +5,12 @@ import inspect
 from base64 import b32encode
 from collections.abc import Iterator, MutableMapping
 from copy import copy
+from decimal import Decimal
 from enum import Enum, IntEnum
 from hashlib import sha3_224
-from typing import TYPE_CHECKING, Any, TypeAlias, cast
+from typing import TYPE_CHECKING, Annotated, Any, TypeAlias, cast
 
-from pydantic import ConfigDict, computed_field, create_model
+from pydantic import ConfigDict, PlainSerializer, computed_field, create_model
 from pydantic import Field as PydanticField
 from pydantic.fields import ComputedFieldInfo
 
@@ -28,10 +29,12 @@ from tortoise.contrib.pydantic.descriptions import (
 )
 from tortoise.contrib.pydantic.utils import get_annotations
 from tortoise.exceptions import NoValuesFetched
-from tortoise.fields import Field, JSONField
+from tortoise.fields import DecimalField, Field, JSONField
 from tortoise.fields.data import CharEnumFieldInstance, IntEnumFieldInstance
 
 if TYPE_CHECKING:  # pragma: nocoverage
+    from typing_extensions import TypeForm
+
     from tortoise.models import Model
 
 # Type alias for a single entry in the recursion stack: (model_class, field_name, max_recursion)
@@ -486,12 +489,14 @@ class PydanticModelCreator:
             json_schema_extra["readOnly"] = constraints["readOnly"]
             del constraints["readOnly"]
         fconfig.update(constraints)
-        python_type: type[Enum] | type[IntEnum] | type
+        python_type: type[Enum | IntEnum] | type | TypeForm[Decimal]
         if isinstance(field, (IntEnumFieldInstance, CharEnumFieldInstance)):
             python_type = field.enum_type
+        elif isinstance(field, DecimalField):
+            python_type = Annotated[Decimal, PlainSerializer(lambda x: f"{x:f}", return_type=str)]
         else:
             python_type = getattr(field, "related_model", field.field_type)
-        ptype = python_type
+        ptype: Any = python_type
         if field.null:
             json_schema_extra["nullable"] = True
         if not field.pk and (field_name in self._optional or field.null):
@@ -515,13 +520,13 @@ class PydanticModelCreator:
                 if orm_obj is not None:
                     try:
                         return original_func(orm_obj)
-                    except NoValuesFetched:
+                    except NoValuesFetched as e:
                         raise NoValuesFetched(
                             f"Computed field '{original_func.__name__}' tried to access a "
                             f"relation that has not been fetched. Either include the relation "
                             f"in the Pydantic model so it is auto-prefetched, or call "
                             f"fetch_related() before serialization."
-                        )
+                        ) from e
                 return original_func(self_pydantic)
 
             comment = _cleandoc(func)
