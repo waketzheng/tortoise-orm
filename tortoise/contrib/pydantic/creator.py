@@ -8,7 +8,7 @@ from copy import copy
 from decimal import Decimal
 from enum import Enum, IntEnum
 from hashlib import sha3_224
-from typing import TYPE_CHECKING, Annotated, Any, TypeAlias, cast
+from typing import TYPE_CHECKING, Annotated, Any, TypeAlias, cast, get_args, get_origin
 
 from pydantic import ConfigDict, PlainSerializer, computed_field, create_model
 from pydantic import Field as PydanticField
@@ -74,20 +74,20 @@ class FieldMap(MutableMapping[str, Field | ComputedFieldDescription]):
             self.field_map_update([pk_field], meta)
         self.computed_fields: dict[str, ComputedFieldDescription] = {}
 
-    def __delitem__(self, __key: str) -> None:
-        self._field_map.__delitem__(__key)
+    def __delitem__(self, key: str, /) -> None:
+        del self._field_map[key]
 
-    def __getitem__(self, __key: str) -> Field | ComputedFieldDescription:
-        return self._field_map.__getitem__(__key)
+    def __getitem__(self, key: str, /) -> Field | ComputedFieldDescription:
+        return self._field_map[key]
+
+    def __setitem__(self, key: str, value: Field | ComputedFieldDescription, /) -> None:
+        self._field_map[key] = value
 
     def __len__(self) -> int:  # pragma: no-coverage
         return self._field_map.__len__()
 
     def __iter__(self) -> Iterator[str]:
         return self._field_map.__iter__()
-
-    def __setitem__(self, __key: str, __value: Field | ComputedFieldDescription) -> None:
-        self._field_map.__setitem__(__key, __value)
 
     def sort_alphabetically(self) -> None:
         self._field_map = {k: self._field_map[k] for k in sorted(self._field_map)}
@@ -126,6 +126,13 @@ class FieldMap(MutableMapping[str, Field | ComputedFieldDescription]):
                 for k in computed
             }
         )
+
+
+def is_field_annotation(type_obj: Any) -> bool:
+    t = get_origin(type_obj)
+    if t is None:
+        return False
+    return issubclass(t, Field)
 
 
 def pydantic_queryset_creator(
@@ -180,7 +187,7 @@ def pydantic_queryset_creator(
     )
     model.__doc__ = _cleandoc(cls)
     model.model_config["title"] = name or f"{submodel.model_config['title']}_list"
-    model.model_config["submodel"] = submodel  # type: ignore[typeddict-unknown-key]
+    model.model_config["submodel"] = submodel  # type: ignore
     return model
 
 
@@ -253,8 +260,8 @@ class PydanticModelCreator:
 
         self._pconfig: ConfigDict
 
-        self._properties: dict[str, PropertyValue] = dict()
-        self._relational_fields_index: list[tuple[str, str]] = list()
+        self._properties: dict[str, PropertyValue] = {}
+        self._relational_fields_index: list[tuple[str, str]] = []
 
         self._model_description: ModelDescription = ModelDescription.from_model(cls)
 
@@ -316,7 +323,7 @@ class PydanticModelCreator:
         return (
             FieldMap(self.meta)
             if self._exclude_read_only
-            else FieldMap(self.meta, pk_field=self._model_description.pk_field)
+            else FieldMap(self.meta, pk_field=self._model_description.pk_field)  # ty:ignore
         )
 
     def _construct_field_map(self) -> None:
@@ -367,6 +374,9 @@ class PydanticModelCreator:
             if isinstance(getattr(v, "decorator_info", None), ComputedFieldInfo):
                 computed_fields[k] = v
             else:
+                if v and is_field_annotation(v[0]):
+                    # `tortoise.fields.base.Field[EnumType]` -> `EnumType`
+                    v = (get_args(v[0])[0], *v[1:])
                 common_fields[k] = v
         base_model = type(
             "BasePydanticModel",
@@ -381,7 +391,7 @@ class PydanticModelCreator:
             **common_fields,
         )
         model.__doc__ = _cleandoc(self._cls)
-        model.model_config["orig_model"] = self._cls  # type: ignore[typeddict-unknown-key]
+        model.model_config["orig_model"] = self._cls  # type: ignore
         _MODEL_INDEX[self._hash] = model
         return model
 
@@ -473,7 +483,7 @@ class PydanticModelCreator:
         model = self._get_submodel(python_type, field_name)
         if model:
             self._relational_fields_index.append((field_name, model.__name__))
-            return list[model]  # type: ignore
+            return list[model]  # type: ignore[valid-type]
         return None
 
     def _process_data_field(
@@ -522,9 +532,9 @@ class PydanticModelCreator:
                         return original_func(orm_obj)
                     except NoValuesFetched as e:
                         raise NoValuesFetched(
-                            f"Computed field '{original_func.__name__}' tried to access a "
-                            f"relation that has not been fetched. Either include the relation "
-                            f"in the Pydantic model so it is auto-prefetched, or call "
+                            f"Computed field '{getattr(original_func, '__name__', repr(original_func))}' "
+                            f"tried to access a relation that has not been fetched. Either include the "
+                            f"relation in the Pydantic model so it is auto-prefetched, or call "
                             f"fetch_related() before serialization."
                         ) from e
                 return original_func(self_pydantic)
@@ -536,7 +546,7 @@ class PydanticModelCreator:
 
     @staticmethod
     def _create_submodel(
-        cls: type[Model],
+        model_cls: type[Model],
         *,
         stack: tuple[StackEntry, ...],
         exclude: tuple[str, ...] = (),
@@ -547,7 +557,7 @@ class PydanticModelCreator:
         sort_alphabetically: bool | None = None,
     ) -> type[PydanticModel] | None:
         """Create a Pydantic submodel with recursion protection against cyclic references."""
-        if not allow_cycles and cls in (c[0] for c in stack[:-1]):
+        if not allow_cycles and model_cls in (c[0] for c in stack[:-1]):
             return None
 
         level = 1
@@ -557,7 +567,7 @@ class PydanticModelCreator:
 
             level += 1
         pmc = PydanticModelCreator(
-            cls,
+            model_cls,
             exclude=exclude,
             include=include,
             computed=computed,
