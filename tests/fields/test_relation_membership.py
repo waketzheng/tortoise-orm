@@ -115,7 +115,7 @@ async def test_trailing_lookup_separator_still_raises(db) -> None:
     await testmodels.MinRelation.create(tournament=tournament)
 
     with pytest.raises(FieldError, match="Unknown filter param"):
-        await testmodels.MinRelation.filter(**{"tournament__": tournament})
+        await testmodels.MinRelation.filter(tournament__=tournament)
 
 
 @pytest.mark.asyncio
