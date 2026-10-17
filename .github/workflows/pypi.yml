@@ -18,6 +18,3 @@ jobs:
         run: uv publish
         env:
           UV_PUBLISH_TOKEN: ${{ secrets.pypi_password }}
-        with:
-          user: __token__
-          password: ${{ secrets.pypi_password }}
