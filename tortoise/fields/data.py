@@ -18,7 +18,7 @@ from pypika_tortoise.terms import Term
 from tortoise import timezone
 from tortoise.exceptions import ConfigurationError, FieldError
 from tortoise.fields.base import Field
-from tortoise.timezone import get_default_timezone, get_use_tz, parse_datetime
+from tortoise.timezone import UTC, get_default_timezone, get_use_tz, parse_datetime
 from tortoise.validators import MaxLengthValidator
 
 try:
@@ -518,52 +518,48 @@ class DatetimeField(Field[T_DATETIME], datetime.datetime):
                     else parse_datetime(value)
                 )
             if get_use_tz():
-                # When use_tz=True, ensure all datetimes are timezone-aware.
-                # auto_now/auto_now_add values are written in UTC. Backends with
-                # timezone-naive timestamp columns return those values as naive
-                # datetimes, so interpret them as UTC before converting to the
-                # configured timezone. User-supplied naive datetimes retain the
-                # existing behavior of being interpreted in the configured zone.
+                # Under use_tz=True, to_db_value converts every datetime to naive UTC
+                # before writing. Backends with timezone-naive timestamp columns
+                # (MySQL DATETIME) return it naive, so interpret as UTC before
+                # converting to the configured timezone. Aware values from
+                # PostgreSQL TIMESTAMPTZ and SQLite's adapter skip this step.
                 if timezone.is_naive(value):
-                    if self.auto_now or self.auto_now_add:
-                        value = timezone.make_aware(value, "UTC").astimezone(get_default_timezone())
-                    else:
-                        value = timezone.make_aware(value)
-                else:
-                    value = value.astimezone(get_default_timezone())
+                    value = timezone.make_aware(value, "UTC")
+                value = timezone.localtime(value)
             else:
                 # When use_tz=False, ensure all datetimes are naive
                 # Some backends (PostgreSQL TIMESTAMPTZ) return aware datetimes natively
                 if timezone.is_aware(value):
-                    value = value.replace(tzinfo=None)
+                    value = timezone.make_naive(value)
+
         return value
 
-    def to_db_value(
-        self, value: DatetimeFieldQueryValueType | None, instance: type[Model] | Model
-    ) -> DatetimeFieldQueryValueType | None:
-        # Only do this if it is a Model instance, not class. Test for guaranteed instance var
+    def to_db_value(self, value, instance):
         if hasattr(instance, "_saved_in_db") and (
             self.auto_now
             or (self.auto_now_add and getattr(instance, self.model_field_name) is None)
         ):
-            now = timezone.now()
-            # Convert to match what would be read from DB (apply timezone conversion)
+            now = (
+                timezone.now()
+                if get_use_tz()
+                else timezone.localtime(datetime.datetime(tz=UTC)).replace(tzinfo=None)
+            )
             now_python = self.to_python_value(now)
             setattr(instance, self.model_field_name, now_python)
             return now  # type: ignore
-        if (
-            value is not None
-            and isinstance(value, datetime.datetime)
-            and get_use_tz()
-            and timezone.is_naive(value)
-        ):
-            warnings.warn(
-                f"DateTimeField {self.model_field_name} received a naive datetime ({value})"
-                " while time zone support is active.",
-                RuntimeWarning,
-                stacklevel=2,
-            )
-            value = timezone.make_aware(value)  # ty:ignore[invalid-assignment]
+
+        if value is not None and isinstance(value, datetime.datetime):
+            if get_use_tz():
+                if timezone.is_naive(value):
+                    warnings.warn(
+                        f"DateTimeField {self.model_field_name!r} received a naive"
+                        f" datetime ({value}) while time zone support is active.",
+                        RuntimeWarning,
+                        stacklevel=2,
+                    )
+                value = value.astimezone(UTC)
+            elif timezone.is_aware(value):
+                value = timezone.make_naive(value)
         self.validate(value)
         return value
 

@@ -22,10 +22,13 @@ Changed
 ^^^^^
 - ``MigrationRecorder.applied_migrations()`` now checks for the migrations table before querying history, allowing catalog lookup errors to propagate while retaining the empty-list fallback for history query errors. (#2382)
 - ``parse_datetime`` now prefers the C-accelerated ``datetime.fromisoformat``, only falling back to ``iso8601`` for formats it can't parse. (#2363)
+- Store datetime values as UTC when ``use_tz=True``, fixing SQLite time filtering and ordering with custom timezones. (#2413)
+- ``use_tz=False`` now requires an explicit ``timezone`` in ``TortoiseConfig``; omitting it raises ``ConfigurationError`` instead of silently defaulting to UTC. (#2413)
+- When ``use_tz=False``, aware datetimes are converted to the configured timezone before stripping ``tzinfo``, instead of being stripped as-is. (#2413)
+- When ``use_tz=True``, naive datetimes read from backends with timezone-naive columns (MySQL ``DATETIME``) are now interpreted as UTC. Data written under ``use_tz=False`` in the past will read back shifted; migrate it explicitly.
 
 Fixed
 ^^^^^
-- Store ``auto_now`` and ``auto_now_add`` datetime values as UTC when ``use_tz=True``, fixing SQLite time filtering and ordering with custom timezones. (#2412)
 - ``DecimalField`` no longer raises ``decimal.InvalidOperation`` for values with more than 28 significant digits. (#2349)
 - fix(expressions): inline subquery parameters when ``params_inline`` is enabled (#2340)
 - Use database column names in reverse foreign-key and one-to-one filters with renamed columns or one-to-one primary keys. (#2338)
