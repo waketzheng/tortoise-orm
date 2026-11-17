@@ -955,4 +955,5 @@ async def test_datetime_auto_now_with_custom_timezone_sqlite_filters(db, enable_
         # Fetch from DB and check instance matches
         obj_db = await model.get(id=obj.id)
         assert obj.datetime_add == obj_db.datetime_add
-        assert obj.datetime_add.tzinfo.key == tz_name or str(obj.datetime_add.tzinfo) == tz_name
+        tz = obj.datetime_add.tzinfo
+        assert getattr(tz, "key", str(tz)) == tz_name

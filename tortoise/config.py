@@ -150,8 +150,15 @@ class TortoiseConfig:
                 if not isinstance(router, (str, type)):
                     raise ConfigurationError("Routers must be str or type")
 
-        if self.use_tz is not None and not isinstance(self.use_tz, bool):
-            raise ConfigurationError("TortoiseConfig.use_tz must be a bool or None")
+        if self.use_tz is not None:
+            if not isinstance(self.use_tz, bool):
+                raise ConfigurationError("TortoiseConfig.use_tz must be a bool or None")
+            if self.use_tz is False and self.timezone is None:
+                # When use_tz=False, timezone not set, sqlite may not work as expected
+                # Because tortoise does not always be able to get tzinfo from system.
+                raise ConfigurationError(
+                    "TortoiseConfig.timezone must be a string, when use_tz is False"
+                )
 
         if self.timezone is not None and not isinstance(self.timezone, str):
             raise ConfigurationError("TortoiseConfig.timezone must be a string or None")

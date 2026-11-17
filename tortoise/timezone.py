@@ -174,7 +174,7 @@ def make_aware(
     """
     tz = _get_or_parse_timezone(timezone)
     if hasattr(tz, "localize"):
-        return tz.localize(value, is_dst=is_dst)  # ty:ignore[call-non-callable]
+        return tz.localize(value, is_dst=is_dst)  # ty:ignore[not-callable]
     if is_aware(value):
         raise ValueError(f"make_aware expects a naive datetime, got {value}")
     # This may be wrong around DST changes!

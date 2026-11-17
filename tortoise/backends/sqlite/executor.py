@@ -13,12 +13,26 @@ from tortoise.contrib.sqlite.regex import (
 )
 from tortoise.fields import BigIntField, IntField, SmallIntField
 from tortoise.filters import insensitive_posix_regex, posix_regex
+from tortoise.timezone import UTC, get_use_tz, localtime
+
+
+def _datetime_adapter(val: datetime.datetime) -> str:
+    if val.tzinfo is not None:
+        val = val.astimezone(UTC) if get_use_tz() else localtime(val).replace(tzinfo=None)
+    elif get_use_tz():
+        # use_tz=True writes naive UTC (see DatetimeField.to_db_value).
+        # Attach UTC here so the stored string carries an explicit offset,
+        # which lets the reader distinguish aware UTC from user-supplied
+        # naive values.
+        val = val.replace(tzinfo=UTC)
+    return val.isoformat(" ")
+
 
 # Conversion for the cases where it's hard to know the
 # related field, e.g. in raw queries, math or annotations.
 sqlite3.register_adapter(Decimal, str)
 sqlite3.register_adapter(datetime.date, lambda val: val.isoformat())
-sqlite3.register_adapter(datetime.datetime, lambda val: val.isoformat(" "))
+sqlite3.register_adapter(datetime.datetime, _datetime_adapter)
 sqlite3.register_adapter(datetime.time, lambda val: val.isoformat())
 
 
