@@ -13,19 +13,30 @@ from tortoise.contrib.sqlite.regex import (
 )
 from tortoise.fields import BigIntField, IntField, SmallIntField
 from tortoise.filters import insensitive_posix_regex, posix_regex
-from tortoise.timezone import UTC, get_use_tz, localtime
+from tortoise.timezone import UTC
 
 
 def _datetime_adapter(val: datetime.datetime) -> str:
-    if val.tzinfo is not None:
-        val = val.astimezone(UTC) if get_use_tz() else localtime(val).replace(tzinfo=None)
-    elif get_use_tz():
-        # use_tz=True writes naive UTC (see DatetimeField.to_db_value).
-        # Attach UTC here so the stored string carries an explicit offset,
-        # which lets the reader distinguish aware UTC from user-supplied
-        # naive values.
-        val = val.replace(tzinfo=UTC)
-    return val.isoformat(" ")
+    # Normalise to UTC before serialising.
+    # Naive values are treated as UTC by contract (DatetimeField.to_db_value
+    # is responsible for delivering UTC here). Do NOT call astimezone() on a
+    # naive value: it silently assumes the *system* local timezone, which
+    # would make stored values depend on the host TZ (e.g. local machine vs.
+    # a UTC Docker container).
+    # TODO: check filter
+    val = val.replace(tzinfo=UTC) if val.tzinfo is None else val.astimezone(UTC)
+
+    # Use "Z" instead of the "+00:00" produced by isoformat():
+    #  * "Z" is the canonical ISO 8601 / RFC 3339 UTC designator; "+00:00"
+    #    merely states a zero offset and is easier to misread as local time.
+    #  * SQLite has no native datetime type, so every stored value should be
+    #    self-describing. A trailing "Z" tells anyone reading the raw column
+    #    -- without consulting docs -- that the value is UTC.
+    #  * SQLite compares TEXT byte-wise, so the format must be identical for
+    #    every row. Pinning a single UTC designator keeps lexicographic order
+    #    equal to chronological order; mixing "Z" and "+00:00" (or dropping
+    #    the suffix) would break range queries.
+    return val.isoformat(" ", timespec="microseconds").removesuffix("+00:00") + "Z"
 
 
 # Conversion for the cases where it's hard to know the
